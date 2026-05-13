@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+bin/
+*.log
+*.md
+Dockerfile
+.dockerignore
+.idea/
+.vscode/
+.DS_Store
