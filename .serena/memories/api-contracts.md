@@ -1,33 +1,45 @@
 # API Contracts
 
-Base: /v1 — Auth: Bearer JWT — Errors: { "error": { "code", "message" } } — Timestamps: ISO 8601 UTC
+Base: `/api/v1` (implementation diverged from earlier `/v1` draft)
+Auth: `Authorization: Bearer <access>`
+Error envelope: `{"error": {"code": "...", "message": "..."}}`
+Success: plain JSON object
+Timestamps: ISO 8601 UTC
 
-## Auth
-POST /auth/register, /auth/login, /auth/google, /auth/refresh, /auth/logout
+## Implemented (Phase 1)
+- POST `/api/v1/auth/signup` — {email, password, handle, display_name} -> TokenPair
+- POST `/api/v1/auth/signin` — {email, password} -> TokenPair
+- POST `/api/v1/auth/refresh` — {refresh_token} -> TokenPair (rotates)
+- GET  `/api/v1/me` — auth required -> ProfileResponse
+- GET  `/api/v1/users/handle/:handle` — public -> PublicProfileResponse
+- GET  `/api/v1/home` — auth required -> `{"trips": []}` (placeholder, Phase 2)
+- GET  `/healthz` — liveness
 
-## Users
-GET /users/me, PATCH /users/me, GET /users/search?q=, GET /users/:id
+TokenPair: `{access_token, refresh_token, access_expires_at, refresh_expires_at}`
 
-## Trips
-GET /trips, POST /trips, GET /trips/:id, PATCH /trips/:id, DELETE /trips/:id
-POST /trips/:id/members, DELETE /trips/:id/members/:userId
-POST /trips/:id/publish, POST /trips/:id/unpublish
+## Planned (Phase 2+)
+### Auth
+- POST `/api/v1/auth/google` — Google ID token -> TokenPair (upsert user)
+- POST `/api/v1/auth/logout`
 
-## Itinerary
-GET /trips/:id/items, POST /trips/:id/items, PATCH /trips/:id/items/:itemId
-DELETE /trips/:id/items/:itemId, PATCH /trips/:id/items/reorder
+### Trips
+GET/POST `/api/v1/trips`, GET/PATCH/DELETE `/api/v1/trips/:id`
+POST/DELETE `/api/v1/trips/:id/members`
+POST `/api/v1/trips/:id/publish` / `/unpublish`
 
-## Check-ins
-POST /trips/:id/items/:itemId/checkin, PATCH /checkins/:checkinId, GET /checkins/:checkinId
-PUT /checkins/:checkinId/memory, PUT /checkins/:checkinId/logistics, PUT /checkins/:checkinId/recommendation
+### Itinerary
+GET/POST `/api/v1/trips/:id/items`, PATCH/DELETE `/api/v1/trips/:id/items/:itemId`, PATCH `/reorder`
 
-## Media
-POST /checkins/:checkinId/media/upload-url (presigned S3)
-POST /checkins/:checkinId/media, PATCH /media/:mediaId, DELETE /media/:mediaId
+### Check-ins (3-layer)
+POST `/api/v1/trips/:id/items/:itemId/checkin`
+PUT `/api/v1/checkins/:id/memory|logistics|recommendation`
 
-## AI
-POST /trips/:id/ai/generate, POST /trips/:id/ai/refine
+### Media
+POST `/api/v1/checkins/:id/media/upload-url` (R2 presigned)
+POST `/api/v1/checkins/:id/media`
 
-## Public (no auth)
-GET /public/trips/:id — recommendation layer ONLY, never joins checkin_logistics
-GET /public/trips — explore feed (V2)
+### AI
+POST `/api/v1/trips/:id/ai/generate`, POST `/refine`
+
+### Public (no auth)
+GET `/api/v1/public/trips/:id` — recommendation layer only; checkin_logistics never joined

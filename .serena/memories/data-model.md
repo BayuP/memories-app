@@ -1,28 +1,38 @@
-# Data Model — 9 Tables
+# Data Model — Phase 1 Migration
+
+Implemented in `backend/migrations/0001_init.up.sql`. Extensions: citext, pgcrypto. All tables: `id uuid PK default gen_random_uuid()`, `created_at`, `updated_at` (trigger). Field names differ from earlier draft — implementation is source of truth.
 
 ## users
-id (uuid PK), handle (unique), display_name, email (unique), password_hash, google_sub (unique), avatar_url, created_at
+id, email (citext UNIQUE), password_hash, handle (citext UNIQUE, `^[a-z0-9_]{3,30}$`), display_name, avatar_url nullable
+
+## refresh_tokens (Phase 1 addition for JWT rotation)
+id, user_id FK users, token_hash, expires_at, revoked_at nullable
 
 ## trips
-id (uuid PK), creator_id (FK users), name, destination, dest_lat, dest_lng, start_date, end_date, cover_photo_url, vibes (text[]), status (planning|active|completed), is_published (bool), created_at
+id, owner_id FK users, title, destination, start_date date, end_date date, vibes text[], status enum(draft|planned|active|completed|published)
 
 ## trip_members
-id (uuid PK), trip_id (FK trips CASCADE), user_id (FK users), role (owner|collaborator), joined_at. UNIQUE(trip_id, user_id)
+id, trip_id FK trips, user_id FK users, role enum(owner|editor), UNIQUE(trip_id,user_id)
 
 ## itinerary_items
-id (uuid PK), trip_id (FK trips CASCADE), created_by (FK users), type (flight|hotel|activity|restaurant|transit|other), name, notes, day_number, event_time, sort_order, is_spontaneous, lat, lng, created_at, updated_at
+id, trip_id FK trips, day int, start_time time, end_time time, title, description, location_name, lat numeric nullable, lng numeric nullable, source enum(ai|user)
 
 ## checkins
-id (uuid PK), item_id (FK itinerary_items CASCADE), user_id (FK users), event_time, logged_at, vibe (loved|ok|meh)
+id, trip_id FK trips, author_id FK users, itinerary_item_id FK itinerary_items nullable, captured_at, lat nullable, lng nullable, kind enum(planned|spontaneous)
 
 ## checkin_memory
-id (uuid PK), checkin_id (FK checkins CASCADE), note. UNIQUE(checkin_id)
+id, checkin_id FK checkins UNIQUE, note, mood, shared_with text[]   -- placeholder ACL
 
-## checkin_logistics — PRIVATE: never in publish queries, never sent to AI
-id (uuid PK), checkin_id (FK checkins CASCADE), booking_ref, confirmation_code, cost, currency, private_notes. UNIQUE(checkin_id)
+## checkin_logistics — PRIVATE (SQL comment in migration)
+id, checkin_id FK checkins UNIQUE, cost numeric(12,2), currency char(3), notes
+Never serialized to public endpoints, AI calls, or published views.
 
 ## checkin_recommendations
-id (uuid PK), checkin_id (FK checkins CASCADE), would_recommend, tips, public_caption. UNIQUE(checkin_id)
+id, checkin_id FK checkins UNIQUE, title, body, tags text[], rating int CHECK 1..5
 
+## checkin_recommendations.media — not separate table
 ## media
-id (uuid PK), checkin_id (FK checkins CASCADE), uploaded_by (FK users), type (photo|video), storage_url, thumbnail_url, duration_sec, exif_taken_at, is_cover, sort_order, created_at
+id, checkin_id FK checkins nullable, owner_id FK users, r2_key, mime, width, height, taken_at, lat nullable, lng nullable
+
+## Indexes
+FKs + users.handle, users.email, refresh_tokens.user_id, refresh_tokens.expires_at
