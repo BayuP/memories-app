@@ -34,3 +34,24 @@ func (s *Service) GetByHandle(ctx context.Context, handle string) (*User, error)
 	}
 	return user, nil
 }
+
+// UpdateMe applies partial profile updates for the authenticated user.
+func (s *Service) UpdateMe(ctx context.Context, userID uuid.UUID, params UpdateUserParams) (*User, error) {
+	user, err := s.repo.UpdateUser(ctx, userID, params)
+	if err != nil {
+		return nil, fmt.Errorf("update me: %w", err)
+	}
+	return user, nil
+}
+
+// SearchByHandle finds users whose handle starts with the given prefix.
+func (s *Service) SearchByHandle(ctx context.Context, prefix string) ([]*User, error) {
+	if prefix == "" {
+		return nil, nil
+	}
+	users, err := s.repo.SearchByHandle(ctx, prefix, 20)
+	if err != nil {
+		return nil, fmt.Errorf("search by handle: %w", err)
+	}
+	return users, nil
+}

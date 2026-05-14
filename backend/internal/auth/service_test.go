@@ -105,6 +105,33 @@ func (m *mockUserRepo) FindByHandle(_ context.Context, handle string) (*users.Us
 	return nil, pgx.ErrNoRows
 }
 
+func (m *mockUserRepo) UpdateUser(_ context.Context, id uuid.UUID, p users.UpdateUserParams) (*users.User, error) {
+	u, ok := m.byID[id]
+	if !ok {
+		return nil, pgx.ErrNoRows
+	}
+	if p.DisplayName != nil {
+		u.DisplayName = *p.DisplayName
+	}
+	if p.AvatarURL != nil {
+		u.AvatarURL = p.AvatarURL
+	}
+	return u, nil
+}
+
+func (m *mockUserRepo) SearchByHandle(_ context.Context, prefix string, limit int) ([]*users.User, error) {
+	var out []*users.User
+	for _, u := range m.byID {
+		if len(u.Handle) >= len(prefix) && u.Handle[:len(prefix)] == prefix {
+			out = append(out, u)
+			if len(out) >= limit {
+				break
+			}
+		}
+	}
+	return out, nil
+}
+
 // --- helpers ---
 
 func newTestService() (*Service, *mockAuthRepo, *mockUserRepo) {

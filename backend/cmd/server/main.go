@@ -13,11 +13,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	anthropicadapter "github.com/BayuP/memories-app/backend/internal/adapter/external/anthropic"
+	"github.com/BayuP/memories-app/backend/internal/adapter/storage/r2"
+	"github.com/BayuP/memories-app/backend/internal/ai"
 	"github.com/BayuP/memories-app/backend/internal/auth"
+	"github.com/BayuP/memories-app/backend/internal/checkin"
 	"github.com/BayuP/memories-app/backend/internal/config"
 	"github.com/BayuP/memories-app/backend/internal/db"
 	"github.com/BayuP/memories-app/backend/internal/httpx"
+	"github.com/BayuP/memories-app/backend/internal/itinerary"
 	"github.com/BayuP/memories-app/backend/internal/logger"
+	"github.com/BayuP/memories-app/backend/internal/media"
+	"github.com/BayuP/memories-app/backend/internal/trips"
 	"github.com/BayuP/memories-app/backend/internal/users"
 )
 
@@ -63,12 +70,35 @@ func run() error {
 
 	userRepo := users.NewRepository(pool)
 	authRepo := auth.NewRepository(pool)
+	tripRepo := trips.NewRepository(pool)
+	itnRepo := itinerary.NewRepository(pool)
+	checkinRepo := checkin.NewRepository(pool)
+	mediaRepo := media.NewRepository(pool)
+
+	r2Client := r2.NewClient(r2.Config{
+		Endpoint:  cfg.S3Endpoint,
+		Bucket:    cfg.S3Bucket,
+		AccessKey: cfg.S3AccessKey,
+		SecretKey: cfg.S3SecretKey,
+		Region:    cfg.S3Region,
+	})
+	anthropicClient := anthropicadapter.NewClient(cfg.AnthropicAPIKey)
 
 	authSvc := auth.NewService(authRepo, userRepo, jwtManager)
 	userSvc := users.NewService(userRepo)
+	tripSvc := trips.NewService(tripRepo)
+	itnSvc := itinerary.NewService(itnRepo, tripRepo)
+	checkinSvc := checkin.NewService(checkinRepo, tripRepo)
+	mediaSvc := media.NewService(mediaRepo, r2Client, tripRepo)
+	aiSvc := ai.NewService(tripRepo, itnSvc, anthropicClient)
 
 	authHandler := auth.NewHandler(authSvc, log)
 	userHandler := users.NewHandler(userSvc, log)
+	tripHandler := trips.NewHandler(tripSvc, log)
+	itnHandler := itinerary.NewHandler(itnSvc, log)
+	checkinHandler := checkin.NewHandler(checkinSvc, log)
+	mediaHandler := media.NewHandler(mediaSvc, log)
+	aiHandler := ai.NewHandler(aiSvc, log)
 
 	authMiddleware := httpx.AuthMiddleware(jwtManager)
 
@@ -77,6 +107,11 @@ func run() error {
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Route("/auth", authHandler.Routes())
 		r.Group(userHandler.Routes(authMiddleware))
+		r.With(authMiddleware).Group(tripHandler.Routes())
+		r.With(authMiddleware).Group(itnHandler.Routes())
+		r.With(authMiddleware).Group(checkinHandler.Routes())
+		r.With(authMiddleware).Group(mediaHandler.Routes())
+		r.With(authMiddleware).Group(aiHandler.Routes())
 		r.With(authMiddleware).Get("/home", homeHandler)
 	})
 

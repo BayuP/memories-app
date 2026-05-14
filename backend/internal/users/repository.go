@@ -16,12 +16,20 @@ type CreateUserParams struct {
 	DisplayName  string
 }
 
+// UpdateUserParams carries optional fields for user profile updates.
+type UpdateUserParams struct {
+	DisplayName *string
+	AvatarURL   *string
+}
+
 // Repository defines the data access contract for user operations.
 type Repository interface {
 	CreateUser(ctx context.Context, params CreateUserParams) (*User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByHandle(ctx context.Context, handle string) (*User, error)
+	UpdateUser(ctx context.Context, id uuid.UUID, params UpdateUserParams) (*User, error)
+	SearchByHandle(ctx context.Context, prefix string, limit int) ([]*User, error)
 }
 
 type postgresRepository struct {
@@ -76,6 +84,44 @@ func (r *postgresRepository) FindByHandle(ctx context.Context, handle string) (*
 		return nil, fmt.Errorf("find user by handle: %w", err)
 	}
 	return u, nil
+}
+
+func (r *postgresRepository) UpdateUser(ctx context.Context, id uuid.UUID, p UpdateUserParams) (*User, error) {
+	row := r.db.QueryRow(ctx,
+		`UPDATE users
+		 SET display_name = COALESCE($2, display_name),
+		     avatar_url   = COALESCE($3, avatar_url),
+		     updated_at   = now()
+		 WHERE id = $1
+		 RETURNING `+userColumns,
+		id, p.DisplayName, p.AvatarURL,
+	)
+	u, err := scanUser(row)
+	if err != nil {
+		return nil, fmt.Errorf("update user: %w", err)
+	}
+	return u, nil
+}
+
+func (r *postgresRepository) SearchByHandle(ctx context.Context, prefix string, limit int) ([]*User, error) {
+	rows, err := r.db.Query(ctx,
+		`SELECT `+userColumns+` FROM users WHERE handle LIKE $1 ORDER BY handle LIMIT $2`,
+		prefix+"%", limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("search by handle: %w", err)
+	}
+	defer rows.Close()
+
+	var users []*User
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, fmt.Errorf("search by handle scan: %w", err)
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
 }
 
 type scanner interface {

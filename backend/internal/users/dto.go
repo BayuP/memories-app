@@ -37,3 +37,14 @@ func ToPublicProfileResponse(u *User) PublicProfileResponse {
 		AvatarURL:   u.AvatarURL,
 	}
 }
+
+// UpdateMeRequest carries optional fields for PATCH /me.
+type UpdateMeRequest struct {
+	DisplayName *string `json:"display_name"`
+	AvatarURL   *string `json:"avatar_url"`
+}
+
+// SearchResponse wraps a user handle search result.
+type SearchResponse struct {
+	Users []PublicProfileResponse `json:"users"`
+}
