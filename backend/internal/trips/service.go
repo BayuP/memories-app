@@ -205,6 +205,66 @@ func (s *Service) IsMember(ctx context.Context, tripID, userID uuid.UUID) (bool,
 	return s.repo.IsMember(ctx, tripID, userID)
 }
 
+// PublishTrip sets a trip's status to 'published' (owner only).
+func (s *Service) PublishTrip(ctx context.Context, tripID, callerID uuid.UUID) (*TripDetailResponse, error) {
+	trip, err := s.repo.FindByID(ctx, tripID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("find trip: %w", err)
+	}
+	if trip.OwnerID != callerID {
+		return nil, ErrForbidden
+	}
+	updated, err := s.repo.UpdateTrip(ctx, tripID, UpdateTripParams{
+		Title:       trip.Title,
+		Destination: trip.Destination,
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Vibes:       trip.Vibes,
+		Status:      "published",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("publish trip: %w", err)
+	}
+	members, err := s.repo.ListMembers(ctx, tripID)
+	if err != nil {
+		return nil, fmt.Errorf("list members: %w", err)
+	}
+	return toTripDetail(updated, members), nil
+}
+
+// UnpublishTrip reverts a trip's status to 'active' (owner only).
+func (s *Service) UnpublishTrip(ctx context.Context, tripID, callerID uuid.UUID) (*TripDetailResponse, error) {
+	trip, err := s.repo.FindByID(ctx, tripID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("find trip: %w", err)
+	}
+	if trip.OwnerID != callerID {
+		return nil, ErrForbidden
+	}
+	updated, err := s.repo.UpdateTrip(ctx, tripID, UpdateTripParams{
+		Title:       trip.Title,
+		Destination: trip.Destination,
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Vibes:       trip.Vibes,
+		Status:      "active",
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unpublish trip: %w", err)
+	}
+	members, err := s.repo.ListMembers(ctx, tripID)
+	if err != nil {
+		return nil, fmt.Errorf("list members: %w", err)
+	}
+	return toTripDetail(updated, members), nil
+}
+
 func parseDate(s *string) *time.Time {
 	if s == nil {
 		return nil

@@ -24,6 +24,7 @@ import (
 	"github.com/BayuP/memories-app/backend/internal/itinerary"
 	"github.com/BayuP/memories-app/backend/internal/logger"
 	"github.com/BayuP/memories-app/backend/internal/media"
+	"github.com/BayuP/memories-app/backend/internal/publish"
 	"github.com/BayuP/memories-app/backend/internal/trips"
 	"github.com/BayuP/memories-app/backend/internal/users"
 )
@@ -92,6 +93,10 @@ func run() error {
 	mediaSvc := media.NewService(mediaRepo, r2Client, tripRepo)
 	aiSvc := ai.NewService(tripRepo, itnSvc, anthropicClient)
 
+	publishRepo := publish.NewRepository(pool)
+	publishSvc := publish.NewService(publishRepo)
+	publishHandler := publish.NewHandler(publishSvc, log)
+
 	authHandler := auth.NewHandler(authSvc, log)
 	userHandler := users.NewHandler(userSvc, log)
 	tripHandler := trips.NewHandler(tripSvc, log)
@@ -113,6 +118,7 @@ func run() error {
 		r.With(authMiddleware).Group(mediaHandler.Routes())
 		r.With(authMiddleware).Group(aiHandler.Routes())
 		r.With(authMiddleware).Get("/home", homeHandler)
+		r.Group(publishHandler.Routes())
 	})
 
 	addr := fmt.Sprintf(":%d", cfg.Port)

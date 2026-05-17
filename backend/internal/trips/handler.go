@@ -34,6 +34,8 @@ func (h *Handler) Routes() func(chi.Router) {
 		r.Delete("/trips/{tripID}", h.delete)
 		r.Post("/trips/{tripID}/members", h.addMember)
 		r.Delete("/trips/{tripID}/members/{userID}", h.removeMember)
+		r.Post("/trips/{tripID}/publish", h.publish)
+		r.Post("/trips/{tripID}/unpublish", h.unpublish)
 	}
 }
 
@@ -226,6 +228,68 @@ func (h *Handler) addMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.WriteJSON(w, http.StatusCreated, member)
+}
+
+func (h *Handler) publish(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := httpx.UserIDFromContext(r.Context())
+	if !ok {
+		httpx.ErrUnauthorized(w)
+		return
+	}
+
+	tripID, err := uuid.Parse(chi.URLParam(r, "tripID"))
+	if err != nil {
+		httpx.ErrNotFound(w, "trip")
+		return
+	}
+
+	detail, err := h.svc.PublishTrip(r.Context(), tripID, callerID)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			httpx.ErrNotFound(w, "trip")
+			return
+		}
+		if errors.Is(err, ErrForbidden) {
+			httpx.ErrForbidden(w)
+			return
+		}
+		h.log.ErrorContext(r.Context(), "publish trip", "error", err)
+		httpx.ErrInternal(w)
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, detail)
+}
+
+func (h *Handler) unpublish(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := httpx.UserIDFromContext(r.Context())
+	if !ok {
+		httpx.ErrUnauthorized(w)
+		return
+	}
+
+	tripID, err := uuid.Parse(chi.URLParam(r, "tripID"))
+	if err != nil {
+		httpx.ErrNotFound(w, "trip")
+		return
+	}
+
+	detail, err := h.svc.UnpublishTrip(r.Context(), tripID, callerID)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			httpx.ErrNotFound(w, "trip")
+			return
+		}
+		if errors.Is(err, ErrForbidden) {
+			httpx.ErrForbidden(w)
+			return
+		}
+		h.log.ErrorContext(r.Context(), "unpublish trip", "error", err)
+		httpx.ErrInternal(w)
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, detail)
 }
 
 func (h *Handler) removeMember(w http.ResponseWriter, r *http.Request) {
