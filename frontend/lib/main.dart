@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memories_app/core/router/app_router.dart';
+import 'package:memories_app/core/theme/app_theme.dart';
 
 void main() {
-  runApp(const MemoriesApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const ProviderScope(child: MemoriesApp()));
 }
 
-class MemoriesApp extends StatelessWidget {
+class MemoriesApp extends ConsumerWidget {
   const MemoriesApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'Memories',
-      home: Scaffold(
-        body: Center(
-          child: Text('Memories App'),
-        ),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      routerConfig: router,
     );
   }
 }

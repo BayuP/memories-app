@@ -16,6 +16,7 @@ backend/
     trips/                        # trip CRUD + member management
     itinerary/                    # itinerary items CRUD + BulkCreateAI
     checkin/                      # 3-layer check-in: memory / logistics (PRIVATE) / recommendation
+    publish/                      # public read-only views (no auth); logistics NEVER read here
     media/                        # presigned R2 upload flow + attach/delete
     ai/                           # AI itinerary generation + chat refinement
     adapter/
@@ -48,7 +49,16 @@ Cross-package membership check via `TripChecker` interface (defined locally in e
 - Upload flow: POST /media/upload-url → presigned PUT (15min TTL) → client uploads → PATCH /media/:id to attach to checkin
 
 ## Tests
-35 unit tests pass with -race. Coverage: JWT, password, handle regex, auth service (mocked repos), users validate. No integration tests yet.
+35 unit tests pass with -race. Coverage: JWT, password, handle regex, auth service (mocked repos), users validate.
+
+Integration tests added (commit d0eec1b):
+- `internal/testdb/testdb.go` — Connect(t), Truncate(t, pool), MustCreateUser(t, pool, handle). Skips if `TEST_DATABASE_URL` unset.
+- `internal/trips/repository_integration_test.go` — 5 real-DB repo tests
+- `internal/itinerary/repository_integration_test.go` — 5 real-DB repo tests
+- `internal/integration/auth_test.go` — 5 full-stack HTTP tests (signup/signin/refresh)
+- `internal/integration/trips_test.go` — 6 full-stack HTTP tests (CRUD + member isolation)
+
+Run all: `TEST_DATABASE_URL=postgres://memories:memories@localhost:5432/memories_app?sslmode=disable go test ./...`
 
 ## Key Dependencies
 - `github.com/go-chi/chi/v5` — router
