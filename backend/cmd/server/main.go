@@ -117,7 +117,23 @@ func run() error {
 		r.With(authMiddleware).Group(checkinHandler.Routes())
 		r.With(authMiddleware).Group(mediaHandler.Routes())
 		r.With(authMiddleware).Group(aiHandler.Routes())
-		r.With(authMiddleware).Get("/home", homeHandler)
+		r.With(authMiddleware).Get("/home", func(w http.ResponseWriter, r *http.Request) {
+				callerID, ok := httpx.UserIDFromContext(r.Context())
+				if !ok {
+					httpx.ErrUnauthorized(w)
+					return
+				}
+				ts, err := tripSvc.ListTrips(r.Context(), callerID)
+				if err != nil {
+					log.ErrorContext(r.Context(), "home list trips", "error", err)
+					httpx.ErrInternal(w)
+					return
+				}
+				if ts == nil {
+					ts = []*trips.TripResponse{}
+				}
+				httpx.WriteJSON(w, http.StatusOK, map[string]any{"trips": ts})
+			})
 		r.Group(publishHandler.Routes())
 	})
 
@@ -151,11 +167,6 @@ func run() error {
 	return nil
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	// Phase 1 exit criteria: returns empty trip list for authenticated users.
-	// TODO(phase2): populate with real trip data.
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"trips": []any{}})
-}
 
 // migrationsDirPath returns the path to the migrations directory.
 // In production the binary is typically co-located with the migrations/ dir.

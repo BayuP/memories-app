@@ -108,6 +108,14 @@ func (s *Service) Refresh(ctx context.Context, rawRefreshToken string) (*TokenPa
 	return s.issueTokenPair(ctx, userID)
 }
 
+// Logout revokes the given refresh token, invalidating the session.
+func (s *Service) Logout(ctx context.Context, rawRefreshToken string) error {
+	if err := s.repo.RevokeRefreshToken(ctx, hashToken(rawRefreshToken)); err != nil {
+		return fmt.Errorf("revoke token: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) issueTokenPair(ctx context.Context, userID uuid.UUID) (*TokenPair, error) {
 	access, err := s.jwt.IssueAccessToken(userID)
 	if err != nil {

@@ -19,6 +19,11 @@ type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
+// LogoutRequest is the payload for POST /api/v1/auth/logout.
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
 // TokenPair is returned on successful sign-up, sign-in, or token refresh.
 type TokenPair struct {
 	AccessToken  string `json:"access_token"`

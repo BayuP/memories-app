@@ -35,6 +35,7 @@ func (h *Handler) Routes() func(chi.Router) {
 		r.Post("/signup", h.signUp)
 		r.Post("/signin", h.signIn)
 		r.Post("/refresh", h.refresh)
+		r.Post("/logout", h.logout)
 	}
 }
 
@@ -106,6 +107,24 @@ func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, pair)
+}
+
+func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
+	var req LogoutRequest
+	if !decodeBody(w, r, &req) {
+		return
+	}
+	if !h.validateStruct(w, &req) {
+		return
+	}
+
+	if err := h.svc.Logout(r.Context(), req.RefreshToken); err != nil {
+		h.log.ErrorContext(r.Context(), "logout", "error", err)
+		httpx.ErrInternal(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func decodeBody(w http.ResponseWriter, r *http.Request, dst any) bool {
