@@ -28,23 +28,29 @@
 - Explore feed (GET /public/trips) — V2 scope, deferred
 - Postgres RLS on checkin_logistics — V2 defence-in-depth, deferred
 
-## Phase 4 — Frontend (Flutter) 🔄 IN PROGRESS
+## Phase 4 — Frontend (Flutter) ✅ DONE (commit 7c7f367 + android platform added)
 Flutter app scaffolded with full clean architecture (data/domain/presentation per feature).
 
 **Done:**
 - All screens: auth, home, create trip, trip timeline, itinerary review, check-in, public trip, profile
 - Core: GoRouter + Riverpod providers + Dio ApiClient with JWT refresh interceptor
 - Platform-conditional token storage: flutter_secure_storage (native) / shared_preferences (web)
+- Android platform added via `flutter create --platforms=android .` — `android/` dir committed
 - Web platform enabled (Chrome). macOS scaffolded (requires full Xcode.app — not CLI tools).
 - Dockerfile fixed: golang:1.23 → golang:1.25 (go.mod requires go 1.25)
 - Router fixed: root `/` now always redirects (to auth or home) instead of hanging on splash
 - Handle `@` prefix stripped on signup; frontend validator matches backend regex `^[a-z0-9_]{3,30}$`
 
-**Blocked:**
-- `OperationError` on web signup — under investigation (browser DevTools JS trace needed)
-- Backend Docker must be rebuilt (`--no-cache`) before end-to-end testing
+**Android emulator setup (local dev machine):**
+- Android SDK at `/usr/local/share/android-commandlinetools` (via `brew install --cask android-commandlinetools`)
+- AVD `Pixel8` created: `system-images;android-35;google_apis;x86_64`
+- Java 26 installed — conflicts with Gradle 8.14. Fix: `brew install --cask temurin@21` + `flutter config --jdk-dir=...`
+- Launch emulator: `flutter emulators --launch Pixel8`
 
 **Remaining (V1 Polish):**
+- Fix Java 26/Gradle 8.14 conflict for `flutter run` on emulator
+- `backend/cmd/server/main.go:156` home feed with real trip data
+- Audit Logistics layer privacy enforcement (no explicit handler-level check yet)
 - Google OAuth
 - POST /auth/logout
 - EXIF parsing on spontaneous check-ins
