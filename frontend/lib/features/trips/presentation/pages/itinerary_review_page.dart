@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
@@ -81,6 +82,25 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
     setState(() => _sendingMessage = true);
 
     _chatHistory.add({'role': 'user', 'content': msg});
+
+    // DEMO: return a canned reply without hitting the AI endpoint
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 800));
+      const reply =
+          'Got it! In demo mode the itinerary stays fixed — but the AI refine feature works great with a real backend.';
+      _chatHistory.add({'role': 'assistant', 'content': reply});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(reply),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        setState(() => _sendingMessage = false);
+      }
+      return;
+    }
+    // DEMO: real refine call below
 
     try {
       final reply = await ref

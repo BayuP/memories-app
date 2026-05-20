@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:memories_app/core/demo/demo_flag.dart';
+import 'package:memories_app/core/demo/mock_data.dart';
 import 'package:memories_app/core/network/api_client.dart';
 import 'package:memories_app/features/checkin/data/models/checkin_model.dart';
 
@@ -15,6 +17,24 @@ class CheckinRemoteDataSource {
     double? lat,
     double? lng,
   }) async {
+    // DEMO: return a stub checkin (no server round-trip)
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      return CheckinModel(
+        id: 'checkin-demo-${DateTime.now().millisecondsSinceEpoch}',
+        tripId: tripId,
+        itineraryItemId: itineraryItemId,
+        kind: kind,
+        capturedAt: capturedAt,
+        lat: lat,
+        lng: lng,
+        memory: null,
+        logistics: null,
+        recommendation: null,
+        media: const [],
+      );
+    }
+    // DEMO: real API call below
     final body = <String, dynamic>{
       'kind': kind,
       'captured_at': capturedAt.toUtc().toIso8601String(),
@@ -28,6 +48,58 @@ class CheckinRemoteDataSource {
   }
 
   Future<CheckinModel> getCheckin(String id) async {
+    // DEMO: look up in mock data
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 250));
+      final entity = mockCheckinById(id);
+      return CheckinModel(
+        id: entity.id,
+        tripId: entity.tripId,
+        itineraryItemId: entity.itineraryItemId,
+        kind: entity.kind,
+        capturedAt: entity.capturedAt,
+        lat: entity.lat,
+        lng: entity.lng,
+        memory: entity.memory == null
+            ? null
+            : CheckinMemoryModel(
+                note: entity.memory!.note,
+                mood: entity.memory!.mood,
+                sharedWith: entity.memory!.sharedWith,
+              ),
+        logistics: entity.logistics == null
+            ? null
+            : CheckinLogisticsModel(
+                cost: entity.logistics!.cost,
+                currency: entity.logistics!.currency,
+                notes: entity.logistics!.notes,
+              ),
+        recommendation: entity.recommendation == null
+            ? null
+            : CheckinRecommendationModel(
+                title: entity.recommendation!.title,
+                body: entity.recommendation!.body,
+                tags: entity.recommendation!.tags,
+                rating: entity.recommendation!.rating,
+              ),
+        media: entity.media
+            .map(
+              (m) => MediaModel(
+                id: m.id,
+                r2Key: m.r2Key,
+                mime: m.mime,
+                url: m.url,
+                width: m.width,
+                height: m.height,
+                takenAt: m.takenAt,
+                lat: m.lat,
+                lng: m.lng,
+              ),
+            )
+            .toList(),
+      );
+    }
+    // DEMO: real API call below
     final data = await _apiClient.get('/api/v1/checkins/$id');
     return CheckinModel.fromJson(data as Map<String, dynamic>);
   }
@@ -38,6 +110,12 @@ class CheckinRemoteDataSource {
     String? mood,
     String? sharedWith,
   }) async {
+    // DEMO: return stub memory model
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      return CheckinMemoryModel(note: note, mood: mood, sharedWith: sharedWith);
+    }
+    // DEMO: real API call below
     final body = <String, dynamic>{};
     if (note != null) body['note'] = note;
     if (mood != null) body['mood'] = mood;
@@ -53,6 +131,12 @@ class CheckinRemoteDataSource {
     String? currency,
     String? notes,
   }) async {
+    // DEMO: return stub logistics model
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      return CheckinLogisticsModel(cost: cost, currency: currency, notes: notes);
+    }
+    // DEMO: real API call below
     final body = <String, dynamic>{};
     if (cost != null) body['cost'] = cost;
     if (currency != null) body['currency'] = currency;
@@ -69,6 +153,17 @@ class CheckinRemoteDataSource {
     List<String>? tags,
     int? rating,
   }) async {
+    // DEMO: return stub recommendation model
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      return CheckinRecommendationModel(
+        title: title,
+        body: body,
+        tags: tags ?? const [],
+        rating: rating,
+      );
+    }
+    // DEMO: real API call below
     final reqBody = <String, dynamic>{};
     if (title != null) reqBody['title'] = title;
     if (body != null) reqBody['body'] = body;
@@ -83,6 +178,16 @@ class CheckinRemoteDataSource {
   }
 
   Future<Map<String, String>> getMediaUploadUrl(String mime) async {
+    // DEMO: return fake upload URL (upload step is skipped in demo)
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return {
+        'media_id': 'media-demo-${DateTime.now().millisecondsSinceEpoch}',
+        'upload_url': 'https://demo.invalid/upload',
+        'r2_key': 'demo/placeholder.jpg',
+      };
+    }
+    // DEMO: real API call below
     final data = await _apiClient.post(
       '/api/v1/media/upload-url',
       data: {'mime': mime},
@@ -100,6 +205,12 @@ class CheckinRemoteDataSource {
     List<int> fileBytes,
     String mime,
   ) async {
+    // DEMO: skip actual upload
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return;
+    }
+    // DEMO: real upload below
     final bytes = List<int>.from(fileBytes);
     await Dio().put(
       uploadUrl,
@@ -124,6 +235,22 @@ class CheckinRemoteDataSource {
     double? lat,
     double? lng,
   }) async {
+    // DEMO: return stub media model (no server attachment)
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return MediaModel(
+        id: mediaId,
+        r2Key: 'demo/placeholder.jpg',
+        mime: 'image/jpeg',
+        url: 'https://picsum.photos/seed/$mediaId/800/600',
+        width: width,
+        height: height,
+        takenAt: takenAt,
+        lat: lat,
+        lng: lng,
+      );
+    }
+    // DEMO: real API call below
     final body = <String, dynamic>{};
     if (checkinId != null) body['checkin_id'] = checkinId;
     if (width != null) body['width'] = width;
@@ -137,6 +264,12 @@ class CheckinRemoteDataSource {
   }
 
   Future<void> deleteMedia(String mediaId) async {
+    // DEMO: no-op
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      return;
+    }
+    // DEMO: real API call below
     await _apiClient.delete('/api/v1/media/$mediaId');
   }
 }

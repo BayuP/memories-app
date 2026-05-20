@@ -1,5 +1,6 @@
 import 'package:memories_app/features/trips/data/models/trip_model.dart';
 import 'package:memories_app/features/trips/domain/entities/public_trip_entity.dart';
+import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 
 class PublicMediaModel {
   const PublicMediaModel({
@@ -101,6 +102,59 @@ class PublicTripModel {
   final List<MemberModel> members;
   final List<ItineraryItemModel> items;
   final List<PublicCheckinRecModel> checkinRecommendations;
+
+  /// DEMO: Construct from in-memory domain entities (no JSON parsing needed).
+  factory PublicTripModel.fromDemoData(
+    TripDetailEntity detail,
+    List<ItineraryItemEntity> items,
+  ) {
+    final t = detail.trip;
+    final tripModel = TripModel(
+      id: t.id,
+      title: t.title,
+      destination: t.destination,
+      startDate: t.startDate,
+      endDate: t.endDate,
+      vibes: t.vibes,
+      status: t.status == TripStatus.published ? 'published' : 'active',
+      createdAt: t.createdAt,
+    );
+    final memberModels = detail.members
+        .map(
+          (m) => MemberModel(
+            userId: m.userId,
+            handle: m.handle,
+            displayName: m.displayName,
+            role: m.role,
+            joinedAt: DateTime(2024, 1, 1),
+          ),
+        )
+        .toList();
+    final itemModels = items
+        .map(
+          (i) => ItineraryItemModel(
+            id: i.id,
+            tripId: i.tripId,
+            day: i.day,
+            title: i.title,
+            startTime: i.startTime,
+            endTime: i.endTime,
+            description: i.description,
+            locationName: i.locationName,
+            lat: i.lat,
+            lng: i.lng,
+            source: i.source,
+            createdAt: DateTime(2024, 5, 1),
+          ),
+        )
+        .toList();
+    return PublicTripModel(
+      trip: tripModel,
+      members: memberModels,
+      items: itemModels,
+      checkinRecommendations: const [],
+    );
+  }
 
   factory PublicTripModel.fromJson(Map<String, dynamic> json) {
     final tripJson = json['trip'] as Map<String, dynamic>;

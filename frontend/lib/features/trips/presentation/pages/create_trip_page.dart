@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:memories_app/core/demo/demo_flag.dart';
+import 'package:memories_app/core/demo/mock_data.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
@@ -113,6 +115,21 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
 
   Future<void> _startCreating() async {
     setState(() => _step = 2);
+
+    // DEMO: skip real API — use mock Bali itinerary to simulate AI generation
+    if (kDemoMode) {
+      // Simulate the generating animation for a moment
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      final tripId = mockTripBali.id;
+      setState(() => _createdTripId = tripId);
+      context.pushReplacement(
+        '/trips/$tripId/itinerary-review',
+        extra: {'items': mockBaliItinerary, 'tripId': tripId},
+      );
+      return;
+    }
+    // DEMO: real trip creation below
 
     try {
       // Create trip

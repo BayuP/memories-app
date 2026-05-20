@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/core/network/api_client.dart';
 import 'package:memories_app/core/network/secure_storage.dart';
 import 'package:memories_app/features/auth/data/datasources/auth_remote_datasource.dart';
@@ -60,6 +61,11 @@ class AuthState {
 class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() async {
+    // DEMO: skip token check, return authenticated with mock user
+    if (kDemoMode) {
+      return const AuthState(status: AuthStatus.authenticated);
+    }
+    // DEMO: real token check below
     final storage = ref.watch(secureStorageProvider);
     final hasTokens = await storage.hasTokens();
     return AuthState(
@@ -72,6 +78,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
+    // DEMO: skip API call, mark authenticated immediately
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      state = const AsyncData(AuthState(status: AuthStatus.authenticated));
+      return;
+    }
+    // DEMO: real sign-in below
     state = const AsyncLoading();
 
     final useCase = ref.read(signInUseCaseProvider);
@@ -93,6 +106,13 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String handle,
     required String displayName,
   }) async {
+    // DEMO: skip API call, mark authenticated immediately
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      state = const AsyncData(AuthState(status: AuthStatus.authenticated));
+      return;
+    }
+    // DEMO: real sign-up below
     state = const AsyncLoading();
 
     final useCase = ref.read(signUpUseCaseProvider);
@@ -114,6 +134,12 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
+    // DEMO: skip token clear, just mark unauthenticated
+    if (kDemoMode) {
+      state = const AsyncData(AuthState(status: AuthStatus.unauthenticated));
+      return;
+    }
+    // DEMO: real sign-out below
     final storage = ref.read(secureStorageProvider);
     await storage.clearTokens();
     state = const AsyncData(AuthState(status: AuthStatus.unauthenticated));
