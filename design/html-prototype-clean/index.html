@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memories — Clean Minimalist Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  padding: 64px 32px;
+}
+.header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+.header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: #111111;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+.header p {
+  font-size: 14px;
+  color: #555555;
+  letter-spacing: 0.01em;
+}
+.variant-badge {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid #EBEBEB;
+  color: #999999;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.card {
+  background: #FAFAFA;
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  border: 1px solid #EBEBEB;
+  transition: all 0.15s ease;
+}
+.card:hover {
+  background: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+.card-num {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999999;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+  margin-bottom: 4px;
+}
+.card-desc {
+  font-size: 12px;
+  color: #999999;
+  line-height: 1.5;
+}
+.tag {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 100px;
+  border: 1px solid #EBEBEB;
+  color: #999999;
+}
+.footer {
+  text-align: center;
+  margin-top: 64px;
+  font-size: 12px;
+  color: #BBBBBB;
+  letter-spacing: 0.02em;
+}
+.compare-note {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: #999999;
+}
+.compare-note a {
+  color: #111111;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Memories</h1>
+  <p>UI Prototype &nbsp;·&nbsp; 10 screens &nbsp;·&nbsp; Clean Minimalist</p>
+  <div class="variant-badge">Comparison variant B</div>
+</div>
+
+<div class="grid">
+  <a class="card" href="01-home.html">
+    <div class="card-num">Screen 01</div>
+    <div class="card-name">Home Feed</div>
+    <div class="card-desc">Journey cards, featured trip, new journey button</div>
+    <div class="tag">Home</div>
+  </a>
+  <a class="card" href="02-trip-timeline.html">
+    <div class="card-num">Screen 02</div>
+    <div class="card-name">Trip Timeline</div>
+    <div class="card-desc">Day-by-day checkpoint list with emoji reactions</div>
+    <div class="tag">Journeys</div>
+  </a>
+  <a class="card" href="02b-trip-map.html">
+    <div class="card-num">Screen 02b</div>
+    <div class="card-name">Trip Map</div>
+    <div class="card-desc">Photo pins on dot-grid map with selected card</div>
+    <div class="tag">Journeys</div>
+  </a>
+  <a class="card" href="02c-trip-people.html">
+    <div class="card-num">Screen 02c</div>
+    <div class="card-name">Trip People</div>
+    <div class="card-desc">Collaborator list, memory counts, add member</div>
+    <div class="tag">Journeys</div>
+  </a>
+  <a class="card" href="03-new-checkpoint.html">
+    <div class="card-num">Screen 03</div>
+    <div class="card-name">New Checkpoint</div>
+    <div class="card-desc">Photo, feeling picker, note input, media toolbar</div>
+    <div class="tag">Add</div>
+  </a>
+  <a class="card" href="04-checkpoint-detail.html">
+    <div class="card-num">Screen 04</div>
+    <div class="card-name">Checkpoint Detail</div>
+    <div class="card-desc">Full memory view, photo strip, feeling, thoughts</div>
+    <div class="tag">Detail</div>
+  </a>
+  <a class="card" href="05-memories-gallery.html">
+    <div class="card-num">Screen 05</div>
+    <div class="card-name">Memories Gallery</div>
+    <div class="card-desc">Masonry photo grid with filter pills</div>
+    <div class="tag">Memories</div>
+  </a>
+  <a class="card" href="06-our-story.html">
+    <div class="card-num">Screen 06</div>
+    <div class="card-name">Our Story</div>
+    <div class="card-desc">AI narrative, polaroid stack, export actions</div>
+    <div class="tag">Story</div>
+  </a>
+  <a class="card" href="07-memory-book.html">
+    <div class="card-num">Screen 07</div>
+    <div class="card-name">Memory Book</div>
+    <div class="card-desc">3D book mockup, preview and customize</div>
+    <div class="tag">Book</div>
+  </a>
+</div>
+
+<div class="compare-note">
+  Compare with <a href="../html-prototype/index.html">Variant A — Warm Cream</a>
+</div>
+
+<div class="footer">
+  Memories &nbsp;·&nbsp; Trip memory app &nbsp;·&nbsp; Clean Minimalist variant
+</div>
+
+</body>
+</html>

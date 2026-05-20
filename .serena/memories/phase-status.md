@@ -28,6 +28,13 @@
 - Explore feed (GET /public/trips) — V2 scope, deferred
 - Postgres RLS on checkin_logistics — V2 defence-in-depth, deferred
 
+## Phase 5 — UI Design System Alignment ✅ DONE (May 2026)
+- HTML prototype built (10 screens): warm cream #F5F3EF, Playfair Display italic headings, near-black #1A1815 CTAs
+- Flutter theme rebuilt: single source at core/theme/app_theme.dart — teal/coral removed, warm cream palette locked
+- 10 Flutter screens + 9 widgets (lib/ui/screens/, lib/ui/widgets/) updated to new theme imports
+- Conflicting ui/theme/app_theme.dart deleted
+- Design direction approved: warm cream (not pure B&W, not terracotta)
+
 ## Phase 4 — Frontend (Flutter) ✅ DONE (commit 7c7f367 + android platform added)
 Flutter app scaffolded with full clean architecture (data/domain/presentation per feature).
 

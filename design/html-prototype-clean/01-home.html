@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memories — Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+}
+
+.phone {
+  width: 390px;
+  height: 844px;
+  background: #FFFFFF;
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #DEDEDE;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Status bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px 0;
+  flex-shrink: 0;
+}
+.status-time {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111111;
+  letter-spacing: -0.2px;
+}
+.status-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Scroll content */
+.scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 96px;
+  scrollbar-width: none;
+}
+.scroll-content::-webkit-scrollbar { display: none; }
+
+/* Hero header */
+.hero-header {
+  padding: 28px 0 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.hero-header-left h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111111;
+  letter-spacing: -0.5px;
+  margin-bottom: 5px;
+  line-height: 1.3;
+}
+.hero-header-left p {
+  font-size: 14px;
+  color: #555555;
+  line-height: 1.5;
+}
+.header-icons {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 4px;
+  flex-shrink: 0;
+}
+
+/* Section header */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+}
+.section-link {
+  font-size: 13px;
+  color: #999999;
+  text-decoration: none;
+}
+
+/* Featured card */
+.featured-card {
+  border-radius: 8px;
+  height: 180px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #DEDEDE 0%, #EFEFEF 100%);
+  cursor: pointer;
+}
+.featured-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.04) 55%, transparent 100%);
+}
+.featured-content {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+}
+.featured-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+.featured-meta {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 8px;
+}
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+.avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #FFFFFF;
+  margin-left: -5px;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  background: #999999;
+}
+.avatar:first-child { margin-left: 0; }
+.avatar-a { background: #AAAAAA; }
+.avatar-b { background: #888888; }
+.avatar-c { background: #BBBBBB; }
+
+/* Compact card */
+.compact-card {
+  background: #FAFAFA;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #EBEBEB;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.compact-card:hover {
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.compact-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #DEDEDE 0%, #EFEFEF 100%);
+}
+.compact-info {
+  flex: 1;
+}
+.compact-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+  margin-bottom: 2px;
+}
+.compact-meta {
+  font-size: 13px;
+  color: #555555;
+  margin-bottom: 5px;
+}
+.compact-right {
+  flex-shrink: 0;
+}
+.avatar-sm {
+  width: 18px;
+  height: 18px;
+  font-size: 8px;
+  border-width: 1.5px;
+}
+
+/* Section */
+.section {
+  margin-bottom: 32px;
+}
+
+/* New journey button */
+.btn-new-journey {
+  width: 100%;
+  background: #111111;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  height: 48px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  margin-top: 4px;
+  letter-spacing: -0.1px;
+}
+.btn-new-journey:hover {
+  background: #222222;
+}
+
+/* Bottom nav */
+.bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 88px;
+  background: #FFFFFF;
+  border-top: 1px solid #F3F3F3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 12px;
+  border-radius: 0 0 40px 40px;
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  width: 56px;
+  padding: 4px 0;
+}
+.nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #BBBBBB;
+}
+.nav-label.active { color: #111111; }
+.nav-add-btn {
+  width: 48px;
+  height: 48px;
+  background: #111111;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-top: -14px;
+  transition: all 0.15s ease;
+}
+.nav-add-btn:hover { background: #222222; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+        <rect x="0" y="3" width="3" height="9" rx="1" fill="#111111"/>
+        <rect x="4.5" y="2" width="3" height="10" rx="1" fill="#111111"/>
+        <rect x="9" y="0.5" width="3" height="11.5" rx="1" fill="#111111"/>
+        <rect x="13.5" y="0" width="3" height="12" rx="1" fill="#111111"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <path d="M8 2.5C10.2 2.5 12.2 3.4 13.6 4.9L15 3.5C13.2 1.6 10.7 0.5 8 0.5C5.3 0.5 2.8 1.6 1 3.5L2.4 4.9C3.8 3.4 5.8 2.5 8 2.5Z" fill="#111111"/>
+        <path d="M8 5.5C9.5 5.5 10.9 6.1 11.9 7.1L13.3 5.7C11.9 4.3 10 3.5 8 3.5C6 3.5 4.1 4.3 2.7 5.7L4.1 7.1C5.1 6.1 6.5 5.5 8 5.5Z" fill="#111111"/>
+        <circle cx="8" cy="10" r="1.5" fill="#111111"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+        <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111111" stroke-opacity="0.35"/>
+        <rect x="2" y="2" width="16" height="8" rx="2" fill="#111111"/>
+        <path d="M23 4.5V7.5C23.8 7.2 24.5 6.7 24.5 6C24.5 5.3 23.8 4.8 23 4.5Z" fill="#111111" fill-opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Scroll Content -->
+  <div class="scroll-content">
+
+    <!-- Hero header -->
+    <div class="hero-header">
+      <div class="hero-header-left">
+        <h1>Memories</h1>
+        <p>Collect moments. Share feelings.<br>Create stories.</p>
+      </div>
+      <div class="header-icons">
+        <!-- Search -->
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="9" cy="9" r="6.5" stroke="#111111" stroke-width="1.5"/>
+          <path d="M14 14L18 18" stroke="#111111" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <!-- Bell -->
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2C7.2 2 5 4.2 5 7V13H3V14H17V13H15V7C15 4.2 12.8 2 10 2Z" stroke="#111111" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+          <path d="M8 14C8 15.1 8.9 16 10 16C11.1 16 12 15.1 12 14" stroke="#111111" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Journeys section -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Your journeys</span>
+        <a href="#" class="section-link">See all</a>
+      </div>
+
+      <!-- Featured card -->
+      <div class="featured-card">
+        <div class="featured-overlay"></div>
+        <div class="featured-content">
+          <div class="featured-title">Bali Trip 🌴</div>
+          <div class="featured-meta">May 8 – May 15, 2024</div>
+          <div class="avatar-stack">
+            <div class="avatar avatar-a">Y</div>
+            <div class="avatar avatar-b">F</div>
+            <div class="avatar avatar-c">R</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compact card 1 -->
+      <div class="compact-card">
+        <div class="compact-thumb" style="background: linear-gradient(135deg, #D8D8D8 0%, #EBEBEB 100%);"></div>
+        <div class="compact-info">
+          <div class="compact-title">Weekend Hangout 🏙</div>
+          <div class="compact-meta">April 20, 2024</div>
+          <div class="avatar-stack">
+            <div class="avatar avatar-sm avatar-a">Y</div>
+            <div class="avatar avatar-sm avatar-b">M</div>
+          </div>
+        </div>
+        <div class="compact-right">
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
+            <path d="M1 1L6 6L1 11" stroke="#BBBBBB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Compact card 2 -->
+      <div class="compact-card">
+        <div class="compact-thumb" style="background: linear-gradient(135deg, #CCCCCC 0%, #E2E2E2 100%);"></div>
+        <div class="compact-info">
+          <div class="compact-title">Highland Escape 🏔</div>
+          <div class="compact-meta">March 3 – March 5, 2024</div>
+          <div class="avatar-stack">
+            <div class="avatar avatar-sm avatar-b">F</div>
+            <div class="avatar avatar-sm avatar-c">R</div>
+            <div class="avatar avatar-sm avatar-a">Y</div>
+          </div>
+        </div>
+        <div class="compact-right">
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
+            <path d="M1 1L6 6L1 11" stroke="#BBBBBB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- New journey button -->
+      <button class="btn-new-journey">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2V14M2 8H14" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        New Journey
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <!-- Home active -->
+    <div class="nav-item">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M3 9.5L11 2.5L19 9.5V19C19 19.6 18.6 20 18 20H14V15H8V20H4C3.4 20 3 19.6 3 19V9.5Z" fill="#111111"/>
+      </svg>
+      <span class="nav-label active">Home</span>
+    </div>
+    <!-- Journeys -->
+    <div class="nav-item">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="3" y="4" width="16" height="14" rx="2" stroke="#BBBBBB" stroke-width="1.5" fill="none"/>
+        <path d="M7 4V2M15 4V2" stroke="#BBBBBB" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M3 9H19" stroke="#BBBBBB" stroke-width="1.5"/>
+        <path d="M7 13H10M7 16H12" stroke="#BBBBBB" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="nav-label">Journeys</span>
+    </div>
+    <!-- Add center -->
+    <div class="nav-item">
+      <div class="nav-add-btn">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M9 3V15M3 9H15" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="nav-label" style="margin-top:14px;">Add</span>
+    </div>
+    <!-- Memories -->
+    <div class="nav-item">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#BBBBBB" stroke-width="1.5"/>
+        <rect x="12" y="3" width="7" height="7" rx="1.5" stroke="#BBBBBB" stroke-width="1.5"/>
+        <rect x="3" y="12" width="7" height="7" rx="1.5" stroke="#BBBBBB" stroke-width="1.5"/>
+        <rect x="12" y="12" width="7" height="7" rx="1.5" stroke="#BBBBBB" stroke-width="1.5"/>
+      </svg>
+      <span class="nav-label">Memories</span>
+    </div>
+    <!-- Profile -->
+    <div class="nav-item">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="8" r="3.5" stroke="#BBBBBB" stroke-width="1.5"/>
+        <path d="M4 19C4 15.7 7.1 13 11 13C14.9 13 18 15.7 18 19" stroke="#BBBBBB" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="nav-label">Profile</span>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

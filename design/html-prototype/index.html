@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memories — UI Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #EDE9E3;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 56px 32px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 40px;
+    color: #1A1A1A;
+    margin-bottom: 10px;
+    letter-spacing: -0.5px;
+  }
+  .header p {
+    font-size: 14px;
+    color: #8A8580;
+    letter-spacing: 0.01em;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 24px 22px;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    border: 1px solid #E8E4DE;
+    transition: all 0.2s ease;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.09);
+  }
+  .card-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: #B5B0AA;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .card-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1A1A1A;
+    margin-bottom: 6px;
+  }
+  .card-desc {
+    font-size: 12px;
+    color: #8A8580;
+    line-height: 1.6;
+  }
+  .tag {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: #F0ECE6;
+    color: #8A8580;
+  }
+  .footer {
+    text-align: center;
+    margin-top: 64px;
+    font-size: 12px;
+    color: #B5B0AA;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Memories</h1>
+  <p>UI Prototype &nbsp;·&nbsp; 9 screens &nbsp;·&nbsp; Warm neutral monochrome</p>
+</div>
+
+<div class="grid">
+  <a class="card" href="01-home.html">
+    <div class="card-num">Screen 01</div>
+    <div class="card-name">Home Feed</div>
+    <div class="card-desc">Journey cards, featured trip, quick add button</div>
+    <div class="tag">Home</div>
+  </a>
+  <a class="card" href="02-trip-timeline.html">
+    <div class="card-num">Screen 02</div>
+    <div class="card-name">Trip Timeline</div>
+    <div class="card-desc">Day-by-day checkpoint list with emoji reactions</div>
+    <div class="tag">Journeys</div>
+  </a>
+  <a class="card" href="02b-trip-map.html">
+    <div class="card-num">Screen 02b</div>
+    <div class="card-name">Trip Map</div>
+    <div class="card-desc">Photo pins on a map with selected location card</div>
+    <div class="tag">Journeys</div>
+  </a>
+  <a class="card" href="02c-trip-people.html">
+    <div class="card-num">Screen 02c</div>
+    <div class="card-name">Trip People</div>
+    <div class="card-desc">Collaborator list, memory counts, add member</div>
+    <div class="tag">Journeys</div>
+  </a>
+  <a class="card" href="03-new-checkpoint.html">
+    <div class="card-num">Screen 03</div>
+    <div class="card-name">New Checkpoint</div>
+    <div class="card-desc">Photo, feeling picker, note input, media toolbar</div>
+    <div class="tag">Add</div>
+  </a>
+  <a class="card" href="04-checkpoint-detail.html">
+    <div class="card-num">Screen 04</div>
+    <div class="card-name">Checkpoint Detail</div>
+    <div class="card-desc">Full memory view, photo strip, feeling, thoughts</div>
+    <div class="tag">Detail</div>
+  </a>
+  <a class="card" href="05-memories-gallery.html">
+    <div class="card-num">Screen 05</div>
+    <div class="card-name">Memories Gallery</div>
+    <div class="card-desc">Masonry photo grid with filter pills</div>
+    <div class="tag">Memories</div>
+  </a>
+  <a class="card" href="06-our-story.html">
+    <div class="card-num">Screen 06</div>
+    <div class="card-name">Our Story</div>
+    <div class="card-desc">AI narrative, polaroid stack, export actions</div>
+    <div class="tag">Story</div>
+  </a>
+  <a class="card" href="07-memory-book.html">
+    <div class="card-num">Screen 07</div>
+    <div class="card-name">Memory Book</div>
+    <div class="card-desc">3D book mockup, preview and customize</div>
+    <div class="tag">Book</div>
+  </a>
+</div>
+
+<div class="footer">
+  Memories · Kenang &nbsp;·&nbsp; Trip memory app &nbsp;·&nbsp; Prototype v2
+</div>
+
+</body>
+</html>

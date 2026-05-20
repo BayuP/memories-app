@@ -41,11 +41,22 @@ Each feature: data/(datasources, models, repositories) → domain/(entities, rep
 - `google_fonts: ^6.2.1`
 - `image_picker: ^1.1.2`
 
-## Design System
-Colors: teal #1D9E75, coral #D85A30, amber #BA7517, bg #F8F6F1
-Fonts: DM Sans (body), DM Serif Display (headings)
-5-tab bottom nav: Trips, Explore (V2), +, Activity, Profile
+## Design System (updated May 2026 — warm cream direction locked)
+Colors: bg #F5F3EF (warm cream), primary #1A1815 (near-black CTAs), text #2D2A26, textSecondary #8A7F75, border #E8E4DE — NO teal/coral
+Fonts: Playfair Display italic (display/headings), Inter (body/UI) — via google_fonts
+Single theme source: `core/theme/app_theme.dart` — `ui/theme/app_theme.dart` deleted
+5-tab bottom nav: Trips, Explore (V2 disabled), +, Activity, Profile
+Active nav: #1A1815, inactive: textMuted. No teal nav indicator.
 
-## 9 Screens
-1. Sign up/login  2. Home trip list  3a. Create trip  3b. Invite collaborators
-4a. AI generating  4b. Itinerary review  5. Trip timeline  5b. Check-in  6. Published view
+## UI screens (lib/ui/screens/ — agent-generated, warm cream styled)
+10 screens: sign_in, home, create_trip, ai_generating, ai_itinerary_review,
+trip_view, check_in, edit_check_in, spontaneous_add_sheet, published_trip
+
+## 9 Reusable widgets (lib/ui/widgets/)
+trip_card, collaborator_avatars, vibe_chip, status_badge, layer_tabs,
+media_thumbnail_strip, day_selector_strip, timeline_item, spontaneous_bucket
+
+## HTML Prototypes (design reference)
+Warm cream (approved): design/html-prototype/ — 10 screens, Playfair italic, #F5F3EF bg
+Clean minimalist (comparison): design/html-prototype-clean/ — Inter only, pure white
+Warm cream direction approved by Bayu. Clean variant kept for reference only.

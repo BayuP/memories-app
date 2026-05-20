@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memories — Trip Timeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #F5F5F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+}
+.phone {
+  width: 390px;
+  height: 844px;
+  background: #FFFFFF;
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #DEDEDE;
+  display: flex;
+  flex-direction: column;
+}
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px 0;
+  flex-shrink: 0;
+}
+.status-time { font-size: 15px; font-weight: 600; color: #111111; }
+.status-icons { display: flex; align-items: center; gap: 6px; }
+
+/* Trip header */
+.trip-header {
+  padding: 16px 20px 0;
+  flex-shrink: 0;
+}
+.trip-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+.back-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.trip-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111111;
+}
+.trip-sub {
+  text-align: center;
+  font-size: 13px;
+  color: #555555;
+  margin-bottom: 12px;
+}
+.collab-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  font-size: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; color: #fff;
+  background: #AAAAAA;
+}
+.avatar-b { background: #888888; }
+.avatar-c { background: #BBBBBB; }
+.avatar-d { background: #999999; }
+.add-collab {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1.5px dashed #DDDDDD;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid #EBEBEB;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+.tab {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #BBBBBB;
+  padding: 10px 0;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s ease;
+}
+.tab.active {
+  color: #111111;
+  font-weight: 600;
+  border-bottom-color: #111111;
+}
+
+/* Scroll */
+.scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 20px 96px;
+  scrollbar-width: none;
+}
+.scroll-content::-webkit-scrollbar { display: none; }
+
+/* Timeline — no card chrome */
+.timeline { position: relative; }
+.timeline-item {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+  position: relative;
+}
+
+.tl-date {
+  width: 44px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 14px;
+}
+.tl-day {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111111;
+  line-height: 1;
+}
+.tl-month {
+  font-size: 10px;
+  color: #999999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.tl-line-col {
+  width: 20px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+}
+.tl-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #111111;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.tl-dot-muted { background: #DEDEDE; }
+.tl-line {
+  width: 1px;
+  flex: 1;
+  min-height: 48px;
+  background: #EBEBEB;
+  margin-top: 4px;
+}
+
+/* No card chrome — just content rows */
+.tl-content {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  padding: 10px 0 20px 10px;
+  cursor: pointer;
+}
+.tl-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #DEDEDE 0%, #EFEFEF 100%);
+}
+.tl-info { flex: 1; }
+.tl-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111111;
+  margin-bottom: 2px;
+}
+.tl-location {
+  font-size: 13px;
+  color: #555555;
+  margin-bottom: 3px;
+}
+.tl-quote {
+  font-size: 13px;
+  font-style: italic;
+  color: #999999;
+  margin-bottom: 4px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.tl-reaction {
+  font-size: 12px;
+  color: #999999;
+}
+
+/* FAB */
+.fab {
+  position: absolute;
+  bottom: 96px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  background: #111111;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.fab:hover { background: #222222; }
+
+/* Bottom nav */
+.bottom-nav {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 88px;
+  background: #FFFFFF;
+  border-top: 1px solid #F3F3F3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 12px;
+  border-radius: 0 0 40px 40px;
+}
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; width: 56px; padding: 4px 0; }
+.nav-label { font-size: 10px; font-weight: 500; color: #BBBBBB; }
+.nav-label.active { color: #111111; }
+.nav-add-btn {
+  width: 48px; height: 48px;
+  background: #111111;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  margin-top: -14px;
+  transition: all 0.15s ease;
+}
+.nav-add-btn:hover { background: #222222; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><rect x="0" y="3" width="3" height="9" rx="1" fill="#111111"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#111111"/><rect x="9" y="0.5" width="3" height="11.5" rx="1" fill="#111111"/><rect x="13.5" y="0" width="3" height="12" rx="1" fill="#111111"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.5C10.2 2.5 12.2 3.4 13.6 4.9L15 3.5C13.2 1.6 10.7 0.5 8 0.5C5.3 0.5 2.8 1.6 1 3.5L2.4 4.9C3.8 3.4 5.8 2.5 8 2.5Z" fill="#111111"/><path d="M8 5.5C9.5 5.5 10.9 6.1 11.9 7.1L13.3 5.7C11.9 4.3 10 3.5 8 3.5C6 3.5 4.1 4.3 2.7 5.7L4.1 7.1C5.1 6.1 6.5 5.5 8 5.5Z" fill="#111111"/><circle cx="8" cy="10" r="1.5" fill="#111111"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111111" stroke-opacity="0.35"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#111111"/><path d="M23 4.5V7.5C23.8 7.2 24.5 6.7 24.5 6C24.5 5.3 23.8 4.8 23 4.5Z" fill="#111111" fill-opacity="0.4"/></svg>
+    </div>
+  </div>
+
+  <!-- Trip Header -->
+  <div class="trip-header">
+    <div class="trip-header-row">
+      <div class="back-btn" onclick="history.back()">
+        <svg width="10" height="18" viewBox="0 0 10 18" fill="none">
+          <path d="M9 1L1 9L9 17" stroke="#111111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="trip-name">Bali Trip 🌴</span>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="8.5" stroke="#BBBBBB" stroke-width="1.5"/>
+        <path d="M10 6V10.5L12.5 13" stroke="#BBBBBB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="trip-sub">May 8 – May 15, 2024</div>
+    <div class="collab-row">
+      <div class="avatar">Y</div>
+      <div class="avatar avatar-b">F</div>
+      <div class="avatar avatar-c">R</div>
+      <div class="avatar avatar-d">M</div>
+      <div class="add-collab">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <path d="M5 1V9M1 5H9" stroke="#CCCCCC" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <div class="tab active" onclick="location.href='02-trip-timeline.html'">Timeline</div>
+    <div class="tab" onclick="location.href='02b-trip-map.html'">Map</div>
+    <div class="tab" onclick="location.href='02c-trip-people.html'">People</div>
+    <div class="tab">Info</div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="scroll-content">
+    <div class="timeline">
+
+      <!-- May 08 -->
+      <div class="timeline-item">
+        <div class="tl-date"><div class="tl-day">08</div><div class="tl-month">May</div></div>
+        <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-thumb" style="background: linear-gradient(135deg, #CFCFCF 0%, #E8E8E8 100%);"></div>
+          <div class="tl-info">
+            <div class="tl-title">Arrival in Bali ✈️</div>
+            <div class="tl-location">Ngurah Rai Airport</div>
+            <div class="tl-quote">"First breath of Bali air..."</div>
+            <div class="tl-reaction">😊 · 5</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- May 09 -->
+      <div class="timeline-item">
+        <div class="tl-date"><div class="tl-day">09</div><div class="tl-month">May</div></div>
+        <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-thumb" style="background: linear-gradient(135deg, #C5C5C5 0%, #DCDCDC 100%);"></div>
+          <div class="tl-info">
+            <div class="tl-title">Uluwatu Sunset 🌅</div>
+            <div class="tl-location">Uluwatu Temple</div>
+            <div class="tl-quote">"The sky was on fire..."</div>
+            <div class="tl-reaction">🤩 · 8</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- May 11 -->
+      <div class="timeline-item">
+        <div class="tl-date"><div class="tl-day">11</div><div class="tl-month">May</div></div>
+        <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-thumb" style="background: linear-gradient(135deg, #D2D2D2 0%, #E5E5E5 100%);"></div>
+          <div class="tl-info">
+            <div class="tl-title">Beach Day 🏖</div>
+            <div class="tl-location">Padang Padang Beach</div>
+            <div class="tl-quote">"Water so clear and cold..."</div>
+            <div class="tl-reaction">🤩 · 12</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- May 12 -->
+      <div class="timeline-item">
+        <div class="tl-date"><div class="tl-day">12</div><div class="tl-month">May</div></div>
+        <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-thumb" style="background: linear-gradient(135deg, #C8C8C8 0%, #DFDFDF 100%);"></div>
+          <div class="tl-info">
+            <div class="tl-title">Cafe Hopping ☕</div>
+            <div class="tl-location">Seminyak, Bali</div>
+            <div class="tl-quote">"Hidden gem after hidden gem..."</div>
+            <div class="tl-reaction">😊 · 7</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- May 13 — Waterfall -->
+      <div class="timeline-item">
+        <div class="tl-date"><div class="tl-day">13</div><div class="tl-month">May</div></div>
+        <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-thumb" style="background: linear-gradient(135deg, #BEBEBE 0%, #D8D8D8 100%);"></div>
+          <div class="tl-info">
+            <div class="tl-title">Waterfall Adventure 💧</div>
+            <div class="tl-location">Sekumpul Waterfall</div>
+            <div class="tl-quote">"Worth every step of the hike..."</div>
+            <div class="tl-reaction">😌 · 6</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- May 13 — Night (same day, muted dot) -->
+      <div class="timeline-item">
+        <div class="tl-date"><div class="tl-day"></div><div class="tl-month"></div></div>
+        <div class="tl-line-col"><div class="tl-dot tl-dot-muted"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-thumb" style="background: linear-gradient(135deg, #B8B8B8 0%, #D0D0D0 100%);"></div>
+          <div class="tl-info">
+            <div class="tl-title">Local Night Market 🌙</div>
+            <div class="tl-location">Ubud Night Market</div>
+            <div class="tl-quote">"Satay and stories under the stars..."</div>
+            <div class="tl-reaction">😊 · 9</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- May 14 -->
+      <div class="timeline-item">
+        <div class="tl-date"><div class="tl-day">14</div><div class="tl-month">May</div></div>
+        <div class="tl-line-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-thumb" style="background: linear-gradient(135deg, #D5D5D5 0%, #E9E9E9 100%);"></div>
+          <div class="tl-info">
+            <div class="tl-title">Free &amp; Easy 🌿</div>
+            <div class="tl-location">Canggu, Bali</div>
+            <div class="tl-quote">"No plan, best day ever..."</div>
+            <div class="tl-reaction">😌 · 4</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- May 15 -->
+      <div class="timeline-item">
+        <div class="tl-date"><div class="tl-day">15</div><div class="tl-month">May</div></div>
+        <div class="tl-line-col"><div class="tl-dot"></div></div>
+        <div class="tl-content">
+          <div class="tl-thumb" style="background: linear-gradient(135deg, #E0E0E0 0%, #F0F0F0 100%);"></div>
+          <div class="tl-info">
+            <div class="tl-title">Goodbye Bali 👋</div>
+            <div class="tl-location">Ngurah Rai Airport</div>
+            <div class="tl-quote">"Until we meet again..."</div>
+            <div class="tl-reaction">😴 · 3</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FAB -->
+  <div class="fab">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M9 3V15M3 9H15" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-item">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 9.5L11 2.5L19 9.5V19C19 19.6 18.6 20 18 20H14V15H8V20H4C3.4 20 3 19.6 3 19V9.5Z" stroke="#BBBBBB" stroke-width="1.5" fill="none"/></svg>
+      <span class="nav-label">Home</span>
+    </div>
+    <div class="nav-item">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="4" width="16" height="14" rx="2" fill="#111111"/><path d="M7 4V2M15 4V2" stroke="#111111" stroke-width="1.5" stroke-linecap="round"/><path d="M3 9H19" stroke="#FFFFFF" stroke-width="1.5"/><path d="M7 13H10M7 16H12" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span class="nav-label active">Journeys</span>
+    </div>
+    <div class="nav-item">
+      <div class="nav-add-btn">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3V15M3 9H15" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <span class="nav-label" style="margin-top:14px;">Add</span>
+    </div>
+    <div class="nav-item">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#BBBBBB" stroke-width="1.5"/><rect x="12" y="3" width="7" height="7" rx="1.5" stroke="#BBBBBB" stroke-width="1.5"/><rect x="3" y="12" width="7" height="7" rx="1.5" stroke="#BBBBBB" stroke-width="1.5"/><rect x="12" y="12" width="7" height="7" rx="1.5" stroke="#BBBBBB" stroke-width="1.5"/></svg>
+      <span class="nav-label">Memories</span>
+    </div>
+    <div class="nav-item">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="3.5" stroke="#BBBBBB" stroke-width="1.5"/><path d="M4 19C4 15.7 7.1 13 11 13C14.9 13 18 15.7 18 19" stroke="#BBBBBB" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span class="nav-label">Profile</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
