@@ -23,7 +23,7 @@ class TripCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.grayMid, width: 0.5),
+          border: Border.all(color: AppColors.border, width: 0.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,7 +34,7 @@ class TripCard extends StatelessWidget {
                 Container(
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.grayLight,
+                    color: AppColors.surfaceVariant,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(AppRadius.lg),
                       topRight: Radius.circular(AppRadius.lg),
@@ -132,12 +132,12 @@ class _StatusBadge extends StatelessWidget {
 
       if (today.isAfter(end)) {
         label = 'past';
-        bgColor = AppColors.grayLight;
-        textColor = AppColors.textHint;
+        bgColor = AppColors.surfaceVariant;
+        textColor = AppColors.textMuted;
       } else if (!today.isBefore(start) && !today.isAfter(end)) {
         label = 'ongoing';
-        bgColor = AppColors.teal;
-        textColor = AppColors.tealLight;
+        bgColor = AppColors.accentGreen;
+        textColor = AppColors.accentGreenLight;
       } else {
         final daysUntil = start.difference(today).inDays;
         label = 'in $daysUntil day${daysUntil == 1 ? '' : 's'}';
@@ -146,8 +146,8 @@ class _StatusBadge extends StatelessWidget {
       }
     } else {
       label = trip.status == TripStatus.published ? 'published' : 'active';
-      bgColor = AppColors.tealLight;
-      textColor = AppColors.tealDark;
+      bgColor = AppColors.accentGreenLight;
+      textColor = AppColors.accentGreenDark;
     }
 
     return Container(
@@ -156,7 +156,7 @@ class _StatusBadge extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(AppRadius.full),
         border: label == 'past'
-            ? Border.all(color: AppColors.grayMid, width: 0.5)
+            ? Border.all(color: AppColors.border, width: 0.5)
             : null,
       ),
       child: Text(

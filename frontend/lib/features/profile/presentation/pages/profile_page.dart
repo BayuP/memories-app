@@ -22,7 +22,7 @@ class ProfilePage extends ConsumerWidget {
         backgroundColor: AppColors.bg,
         body: Center(
           child: CircularProgressIndicator(
-            color: AppColors.teal,
+            color: AppColors.accentGreen,
             strokeWidth: 2,
           ),
         ),
@@ -48,7 +48,7 @@ class ProfilePage extends ConsumerWidget {
                 Text(
                   'could not load profile',
                   style:
-                      AppTextStyles.bodyMedium(color: AppColors.textMuted),
+                      AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -86,18 +86,18 @@ class _ProfileContent extends ConsumerWidget {
               child: tripsAsync.when(
                 loading: () => const Center(
                   child: CircularProgressIndicator(
-                    color: AppColors.teal,
+                    color: AppColors.accentGreen,
                     strokeWidth: 2,
                   ),
                 ),
                 error: (e, _) => Center(
                   child: Text(
                     'failed to load trips',
-                    style: AppTextStyles.bodySmall(),
+                    style: AppTextStyles.bodySmall,
                   ),
                 ),
                 data: (trips) => RefreshIndicator(
-                  color: AppColors.teal,
+                  color: AppColors.accentGreen,
                   onRefresh: () async {
                     await ref.read(tripsProvider.notifier).refresh();
                     await ref.read(profileProvider.notifier).refresh();
@@ -113,8 +113,7 @@ class _ProfileContent extends ConsumerWidget {
                           child: Center(
                             child: Text(
                               'no trips yet',
-                              style: AppTextStyles.bodyMedium(
-                                  color: AppColors.textMuted),
+                              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
                             ),
                           ),
                         )
@@ -177,7 +176,7 @@ class _ProfileContent extends ConsumerWidget {
                 onPressed: () => _showEditSheet(context, ref),
                 child: Text(
                   'edit profile',
-                  style: AppTextStyles.uiLabel(color: AppColors.teal),
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.accentGreen),
                 ),
               ),
               const SizedBox(width: 4),
@@ -187,7 +186,7 @@ class _ProfileContent extends ConsumerWidget {
                 },
                 child: Text(
                   'sign out',
-                  style: AppTextStyles.uiLabel(color: AppColors.coral),
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.coral),
                 ),
               ),
             ],
@@ -208,13 +207,12 @@ class _ProfileContent extends ConsumerWidget {
                   children: [
                     Text(
                       profile.displayName,
-                      style: AppTextStyles.displaySmall(color: AppColors.text),
+                      style: AppTextStyles.displaySmall.copyWith(color: AppColors.text),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '@${profile.handle}',
-                      style: AppTextStyles.bodySmall(
-                          color: AppColors.textMuted),
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
                     ),
                   ],
                 ),
@@ -346,7 +344,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.grayLight,
+        color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Row(
@@ -419,7 +417,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.grayMid,
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.full),
               ),
             ),
@@ -427,19 +425,19 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           const SizedBox(height: 20),
           Text(
             'edit profile',
-            style: AppTextStyles.bodyLarge(color: AppColors.text)
+            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.text)
                 .copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
           Text(
             'display name',
-            style: AppTextStyles.uiLabel(color: AppColors.textMuted),
+            style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: _nameController,
             autofocus: true,
-            style: AppTextStyles.uiInput(),
+            style: AppTextStyles.bodyMedium,
             decoration: const InputDecoration(
               hintText: 'your name',
             ),
@@ -529,7 +527,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.text : AppColors.textHint;
+    final color = selected ? AppColors.text : AppColors.textMuted;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

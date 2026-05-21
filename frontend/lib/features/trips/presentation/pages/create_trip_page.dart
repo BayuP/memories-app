@@ -232,10 +232,10 @@ class _Step1Widget extends StatelessWidget {
                     height: 80,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: AppColors.grayLight,
+                      color: AppColors.surfaceVariant,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(
-                        color: AppColors.grayMid,
+                        color: AppColors.border,
                         width: 0.5,
                         style: BorderStyle.solid,
                       ),
@@ -245,12 +245,12 @@ class _Step1Widget extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.camera_alt_outlined,
-                              size: 22, color: AppColors.textHint),
+                              size: 22, color: AppColors.textMuted),
                           SizedBox(height: 4),
                           Text(
                             'add cover photo',
                             style: TextStyle(
-                              color: AppColors.textHint,
+                              color: AppColors.textMuted,
                               fontSize: 11,
                             ),
                           ),
@@ -263,7 +263,7 @@ class _Step1Widget extends StatelessWidget {
                     label: 'TRIP NAME',
                     child: TextFormField(
                       controller: titleController,
-                      style: AppTextStyles.uiInput(),
+                      style: AppTextStyles.bodyMedium,
                       decoration: InputDecoration(
                         hintText: 'summer escape',
                         errorText: titleError,
@@ -275,11 +275,11 @@ class _Step1Widget extends StatelessWidget {
                     label: 'DESTINATION',
                     child: TextFormField(
                       controller: destinationController,
-                      style: AppTextStyles.uiInput(),
+                      style: AppTextStyles.bodyMedium,
                       decoration: InputDecoration(
                         hintText: 'city, country',
                         prefixIcon: const Icon(Icons.location_on_outlined,
-                            size: 16, color: AppColors.textHint),
+                            size: 16, color: AppColors.textMuted),
                         prefixIconConstraints:
                             const BoxConstraints(minWidth: 36, minHeight: 36),
                         errorText: destinationError,
@@ -407,11 +407,11 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                   TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
-                    style: AppTextStyles.uiInput(),
+                    style: AppTextStyles.bodyMedium,
                     decoration: const InputDecoration(
                       hintText: 'search by handle or name...',
                       prefixIcon: Icon(Icons.search,
-                          size: 18, color: AppColors.textHint),
+                          size: 18, color: AppColors.textMuted),
                       prefixIconConstraints:
                           BoxConstraints(minWidth: 40, minHeight: 36),
                     ),
@@ -420,7 +420,7 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                   if (widget.addedUsers.isNotEmpty) ...[
                     Text(
                       'ADDED',
-                      style: AppTextStyles.uiLabel(color: AppColors.textMuted)
+                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)
                           .copyWith(
                         letterSpacing: 0.8,
                         fontSize: 10,
@@ -434,12 +434,12 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.check,
-                                size: 14, color: AppColors.teal),
+                                size: 14, color: AppColors.accentGreen),
                             const SizedBox(width: 4),
                             GestureDetector(
                               onTap: () => widget.onUserRemoved(u),
                               child: const Icon(Icons.close,
-                                  size: 14, color: AppColors.textHint),
+                                  size: 14, color: AppColors.textMuted),
                             ),
                           ],
                         ),
@@ -450,7 +450,7 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                   if (_query.isNotEmpty) ...[
                     Text(
                       'RESULTS',
-                      style: AppTextStyles.uiLabel(color: AppColors.textMuted)
+                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)
                           .copyWith(
                         letterSpacing: 0.8,
                         fontSize: 10,
@@ -462,7 +462,7 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                         child: Padding(
                           padding: EdgeInsets.all(16),
                           child: CircularProgressIndicator(
-                            color: AppColors.teal,
+                            color: AppColors.accentGreen,
                             strokeWidth: 2,
                           ),
                         ),
@@ -481,7 +481,7 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                           return const Text(
                             'no users found',
                             style: TextStyle(
-                                color: AppColors.textHint, fontSize: 12),
+                                color: AppColors.textMuted, fontSize: 12),
                           );
                         }
                         return Column(
@@ -495,11 +495,11 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppColors.grayLight,
+                                        color: AppColors.surfaceVariant,
                                         borderRadius: BorderRadius.circular(
                                             AppRadius.full),
                                         border: Border.all(
-                                            color: AppColors.grayMid,
+                                            color: AppColors.border,
                                             width: 0.5),
                                       ),
                                       child: const Text(
@@ -632,7 +632,7 @@ class _Step3GeneratingWidgetState extends State<_Step3GeneratingWidget>
                 const SizedBox(height: 20),
                 Text(
                   'building your ${widget.destination} itinerary',
-                  style: AppTextStyles.bodyMedium(color: AppColors.text)
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.text)
                       .copyWith(fontSize: 14, fontWeight: FontWeight.w600),
                   textAlign: TextAlign.center,
                 ),
@@ -641,7 +641,7 @@ class _Step3GeneratingWidgetState extends State<_Step3GeneratingWidget>
                   Text(
                     '$_durationDays day${_durationDays == 1 ? '' : 's'}',
                     style:
-                        AppTextStyles.bodySmall(color: AppColors.textMuted),
+                        AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
                   ),
                 const SizedBox(height: 24),
                 AnimatedBuilder(
@@ -656,7 +656,7 @@ class _Step3GeneratingWidgetState extends State<_Step3GeneratingWidget>
                   child: Text(
                     _statuses[_statusIndex],
                     key: ValueKey(_statusIndex),
-                    style: AppTextStyles.uiLabel(color: AppColors.textHint),
+                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -679,7 +679,7 @@ class _ProgressIndicatorBar extends StatelessWidget {
     return Container(
       height: 3,
       decoration: BoxDecoration(
-        color: AppColors.grayLight,
+        color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: FractionallySizedBox(
@@ -718,7 +718,7 @@ class _ProgressBar extends StatelessWidget {
               height: 3,
               margin: EdgeInsets.only(right: i < total - 1 ? 4 : 0),
               decoration: BoxDecoration(
-                color: isActive ? AppColors.text : AppColors.grayMid,
+                color: isActive ? AppColors.text : AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.full),
               ),
             ),
@@ -742,7 +742,7 @@ class _LabeledField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTextStyles.uiLabel(color: AppColors.textMuted).copyWith(
+          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted).copyWith(
             fontSize: 10,
             letterSpacing: 0.8,
           ),
@@ -782,7 +782,7 @@ class _DatePickerButton extends StatelessWidget {
           builder: (context, child) => Theme(
             data: Theme.of(context).copyWith(
               colorScheme: Theme.of(context).colorScheme.copyWith(
-                    primary: AppColors.teal,
+                    primary: AppColors.accentGreen,
                   ),
             ),
             child: child!,
@@ -802,9 +802,7 @@ class _DatePickerButton extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Text(
             _label,
-            style: AppTextStyles.uiInput(
-              color: value == null ? AppColors.textHint : AppColors.text,
-            ).copyWith(fontSize: 13),
+            style: AppTextStyles.bodyMedium.copyWith(color: value == null ? AppColors.textMuted : AppColors.text,).copyWith(fontSize: 13),
           ),
         ),
       ),
@@ -830,11 +828,11 @@ class _VibePill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppColors.text : AppColors.grayLight,
+          color: selected ? AppColors.text : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(AppRadius.full),
           border: selected
               ? null
-              : Border.all(color: AppColors.grayMid, width: 0.5),
+              : Border.all(color: AppColors.border, width: 0.5),
         ),
         child: Text(
           label,
@@ -872,7 +870,7 @@ class _UserRow extends StatelessWidget {
               children: [
                 Text(
                   user.displayName,
-                  style: AppTextStyles.bodySmall(color: AppColors.text)
+                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.text)
                       .copyWith(
                     fontWeight: FontWeight.w500,
                     fontSize: 13,
@@ -880,7 +878,7 @@ class _UserRow extends StatelessWidget {
                 ),
                 Text(
                   '@${user.handle}',
-                  style: AppTextStyles.uiLabel(color: AppColors.textHint),
+                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                 ),
               ],
             ),

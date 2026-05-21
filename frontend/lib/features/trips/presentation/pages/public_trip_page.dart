@@ -25,7 +25,7 @@ class PublicTripPage extends ConsumerWidget {
         backgroundColor: AppColors.bg,
         body: Center(
           child: CircularProgressIndicator(
-            color: AppColors.teal,
+            color: AppColors.accentGreen,
             strokeWidth: 2,
           ),
         ),
@@ -44,13 +44,13 @@ class PublicTripPage extends ConsumerWidget {
                 Text(
                   'could not load trip',
                   style:
-                      AppTextStyles.bodyMedium(color: AppColors.textMuted),
+                      AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
                 Text(
                   e.toString(),
-                  style: AppTextStyles.bodySmall(),
+                  style: AppTextStyles.bodySmall,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -239,7 +239,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
                   onPressed:
                       _isPublishing ? null : () => _handlePublishToggle(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.teal,
+                    backgroundColor: AppColors.accentGreen,
                     foregroundColor: AppColors.white,
                   ),
                   child: _isPublishing
@@ -303,7 +303,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
                   )
                 : Text(
                     'unpublish',
-                    style: AppTextStyles.uiLabel(color: AppColors.textMuted),
+                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                   ),
           ),
         IconButton(
@@ -331,7 +331,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          color: AppColors.grayLight,
+          color: AppColors.surfaceVariant,
         ),
       ),
     );
@@ -384,7 +384,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           Text(
             _destinationDateLine,
             style: const TextStyle(
-              color: AppColors.textHint,
+              color: AppColors.textMuted,
               fontSize: 10,
             ),
           ),
@@ -425,7 +425,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
                 Text(
                   '@${owner.handle} · ${_pub.members.length} people went',
                   style: const TextStyle(
-                    color: AppColors.textHint,
+                    color: AppColors.textMuted,
                     fontSize: 9,
                   ),
                 ),
@@ -454,7 +454,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
 
   Widget _buildDivider() {
     return const Divider(
-      color: AppColors.grayLight,
+      color: AppColors.surfaceVariant,
       thickness: 1,
       height: 1,
     );
@@ -471,7 +471,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
             ),
           ),
           const VerticalDivider(
-            color: AppColors.grayLight,
+            color: AppColors.surfaceVariant,
             thickness: 1,
             width: 1,
           ),
@@ -482,7 +482,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
             ),
           ),
           const VerticalDivider(
-            color: AppColors.grayLight,
+            color: AppColors.surfaceVariant,
             thickness: 1,
             width: 1,
           ),
@@ -504,7 +504,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
         child: Center(
           child: Text(
             'no public memories yet',
-            style: AppTextStyles.bodySmall(),
+            style: AppTextStyles.bodySmall,
           ),
         ),
       );
@@ -547,7 +547,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
                 child: Text(
                   'see all ${recsByDay[day]!.length} stops',
                   style: const TextStyle(
-                    color: AppColors.teal,
+                    color: AppColors.accentGreen,
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -565,14 +565,14 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
                   Text(
                     'see all ${days.length} days',
                     style: const TextStyle(
-                      color: AppColors.teal,
+                      color: AppColors.accentGreen,
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(width: 4),
                   const Icon(Icons.expand_more,
-                      size: 16, color: AppColors.teal),
+                      size: 16, color: AppColors.accentGreen),
                 ],
               ),
             ),
@@ -608,13 +608,13 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
   Widget _buildLockNotice() {
     return Container(
       width: double.infinity,
-      color: AppColors.grayLight,
+      color: AppColors.surfaceVariant,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       margin: const EdgeInsets.only(top: 16),
       child: const Text(
         '🔒 logistics and private notes are never shown here',
         style: TextStyle(
-          color: AppColors.textHint,
+          color: AppColors.textMuted,
           fontSize: 10,
         ),
         textAlign: TextAlign.center,
@@ -715,7 +715,7 @@ class _StatCell extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: AppColors.textHint,
+              color: AppColors.textMuted,
               fontSize: 10,
             ),
           ),
@@ -744,7 +744,7 @@ class _RecItem extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppColors.grayLight,
+              color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: hasMedia
@@ -758,14 +758,14 @@ class _RecItem extends StatelessWidget {
                       errorBuilder: (_, __, ___) => const Icon(
                         Icons.image_outlined,
                         size: 20,
-                        color: AppColors.grayMid,
+                        color: AppColors.border,
                       ),
                     ),
                   )
                 : const Icon(
                     Icons.place_outlined,
                     size: 20,
-                    color: AppColors.grayMid,
+                    color: AppColors.border,
                   ),
           ),
           const SizedBox(width: 10),
@@ -810,7 +810,7 @@ class _RecItem extends StatelessWidget {
                   Text(
                     '📍 ${rec.tags.first}',
                     style: const TextStyle(
-                      color: AppColors.textHint,
+                      color: AppColors.textMuted,
                       fontSize: 9,
                     ),
                   ),
@@ -832,9 +832,9 @@ class _RecBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg =
-        isSpontaneous ? AppColors.coralLight : AppColors.tealLight;
+        isSpontaneous ? AppColors.coralLight : AppColors.accentGreenLight;
     final textColor =
-        isSpontaneous ? AppColors.coral : AppColors.tealDark;
+        isSpontaneous ? AppColors.coral : AppColors.accentGreenDark;
     final label =
         isSpontaneous ? '✶ unplanned' : 'must visit';
 
@@ -873,7 +873,7 @@ class _BottomNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.text : AppColors.textHint;
+    final color = selected ? AppColors.text : AppColors.textMuted;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

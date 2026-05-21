@@ -137,7 +137,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
               subtitle,
               style: const TextStyle(
                 fontSize: 10,
-                color: AppColors.textHint,
+                color: AppColors.textMuted,
               ),
             ),
           ],
@@ -183,7 +183,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
         Container(
           height: 130,
           width: double.infinity,
-          color: AppColors.grayLight,
+          color: AppColors.surfaceVariant,
           child: _selectedImages.isEmpty
               ? const Center(
                   child: Text(
@@ -271,7 +271,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
-                      color: AppColors.grayMid,
+                      color: AppColors.border,
                       width: 1,
                     ),
                   ),
@@ -301,7 +301,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
               height: 4,
               margin: const EdgeInsets.only(top: 10, bottom: 8),
               decoration: BoxDecoration(
-                color: AppColors.grayMid,
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.full),
               ),
             ),
@@ -394,9 +394,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.grayLight,
+                color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(AppRadius.full),
-                border: Border.all(color: AppColors.grayMid, width: 0.5),
+                border: Border.all(color: AppColors.border, width: 0.5),
               ),
               child: Text(
                 _formatTime(_capturedAt),
@@ -501,7 +501,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.grayLight,
+              color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: const Row(
@@ -696,7 +696,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                         : Icons.star_outline_rounded,
                     color: starNum <= _recRating
                         ? AppColors.amber
-                        : AppColors.grayMid,
+                        : AppColors.border,
                     size: 28,
                   ),
                 ),

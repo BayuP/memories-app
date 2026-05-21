@@ -167,25 +167,23 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                   Row(
                     children: [
                       const Icon(Icons.location_on_outlined,
-                          size: 12, color: AppColors.textHint),
+                          size: 12, color: AppColors.textMuted),
                       const SizedBox(width: 4),
                       Text(
                         detail.trip.destination,
-                        style: AppTextStyles.uiLabel(color: AppColors.textHint),
+                        style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                       ),
                       if (detail.trip.startDate != null &&
                           detail.trip.endDate != null) ...[
                         const SizedBox(width: 8),
                         Text(
                           '·',
-                          style: AppTextStyles.uiLabel(
-                              color: AppColors.textHint),
+                          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '${DateFormat('MMM d').format(detail.trip.startDate!)} – ${DateFormat('MMM d').format(detail.trip.endDate!)}',
-                          style: AppTextStyles.uiLabel(
-                              color: AppColors.textHint),
+                          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                         ),
                       ],
                     ],
@@ -200,14 +198,13 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: AppColors.grayLight,
+                                color: AppColors.surfaceVariant,
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.full),
                               ),
                               child: Text(
                                 v,
-                                style: AppTextStyles.uiLabel(
-                                    color: AppColors.textHint),
+                                style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                               ),
                             ),
                           )
@@ -223,7 +220,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
             child: itemsAsync.isLoading && items.isEmpty
                 ? const Center(
                     child: CircularProgressIndicator(
-                        color: AppColors.teal, strokeWidth: 2),
+                        color: AppColors.accentGreen, strokeWidth: 2),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.only(bottom: 120),
@@ -238,8 +235,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                             child: Text(
                               _dayLabel(day, detail),
-                              style: AppTextStyles.uiLabel(
-                                      color: AppColors.textMuted)
+                              style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)
                                   .copyWith(
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 0.3,
@@ -280,7 +276,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
         title: const Text('remove item?'),
         content: Text(
           'remove "${item.title}" from the itinerary?',
-          style: AppTextStyles.bodySmall(),
+          style: AppTextStyles.bodySmall,
         ),
         actions: [
           TextButton(
@@ -361,13 +357,13 @@ class _ItineraryItemTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Icon(Icons.drag_handle,
-                  color: AppColors.grayMid, size: 16),
+                  color: AppColors.border, size: 16),
               const SizedBox(width: 10),
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                   decoration: BoxDecoration(
-                    color: AppColors.grayLight,
+                    color: AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(7),
                     border:
                         Border.all(color: AppColors.border, width: 0.5),
@@ -399,7 +395,7 @@ class _ItineraryItemTile extends StatelessWidget {
                                     .where((t) => t != null)
                                     .join(' – '),
                                 style: const TextStyle(
-                                  color: AppColors.textHint,
+                                  color: AppColors.textMuted,
                                   fontSize: 9,
                                 ),
                               ),
@@ -418,7 +414,7 @@ class _ItineraryItemTile extends StatelessWidget {
                         ),
                       ),
                       const Icon(Icons.chevron_right,
-                          color: AppColors.grayMid, size: 14),
+                          color: AppColors.border, size: 14),
                     ],
                   ),
                 ),
@@ -466,7 +462,7 @@ class _BottomSheet extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
-                  style: AppTextStyles.uiInput().copyWith(fontSize: 13),
+                  style: AppTextStyles.bodyMedium.copyWith(fontSize: 13),
                   decoration: const InputDecoration(
                     hintText: 'ask AI to refine...',
                     isDense: true,
@@ -484,7 +480,7 @@ class _BottomSheet extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: sending ? AppColors.grayMid : AppColors.text,
+                    color: sending ? AppColors.border : AppColors.text,
                     shape: BoxShape.circle,
                   ),
                   child: sending
@@ -599,7 +595,7 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.grayMid,
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.full),
               ),
             ),
@@ -669,7 +665,7 @@ class _SheetField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTextStyles.uiLabel(color: AppColors.textMuted).copyWith(
+          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted).copyWith(
             fontSize: 10,
             letterSpacing: 0.8,
           ),
@@ -678,7 +674,7 @@ class _SheetField extends StatelessWidget {
         TextField(
           controller: controller,
           maxLines: maxLines,
-          style: AppTextStyles.uiInput(),
+          style: AppTextStyles.bodyMedium,
           decoration: InputDecoration(
             hintText: hint,
             isDense: true,

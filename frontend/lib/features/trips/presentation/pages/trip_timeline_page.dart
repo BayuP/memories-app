@@ -90,7 +90,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         endDate: null,
         body: const Center(
           child: CircularProgressIndicator(
-              color: AppColors.teal, strokeWidth: 2),
+              color: AppColors.accentGreen, strokeWidth: 2),
         ),
       ),
       error: (e, _) => _buildScaffold(
@@ -132,7 +132,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                 child: itemsAsync.when(
                   loading: () => const Center(
                     child: CircularProgressIndicator(
-                        color: AppColors.teal, strokeWidth: 2),
+                        color: AppColors.accentGreen, strokeWidth: 2),
                   ),
                   error: (e, _) => _buildErrorState(
                     onRetry: () =>
@@ -148,7 +148,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                         return aTime.compareTo(bTime);
                       });
                     return RefreshIndicator(
-                      color: AppColors.teal,
+                      color: AppColors.accentGreen,
                       onRefresh: () async {
                         ref.invalidate(tripDetailProvider(widget.tripId));
                         ref.invalidate(itineraryItemsProvider(widget.tripId));
@@ -251,7 +251,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
               style: const TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w400,
-                color: AppColors.textHint,
+                color: AppColors.textMuted,
               ),
             ),
         ],
@@ -307,7 +307,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
             '${members.length} ${members.length == 1 ? 'person' : 'people'} on this trip',
             style: const TextStyle(
               fontSize: 10,
-              color: AppColors.textHint,
+              color: AppColors.textMuted,
             ),
           ),
         ],
@@ -342,11 +342,11 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.text : AppColors.grayLight,
+                color: isSelected ? AppColors.text : AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(AppRadius.full),
                 border: isSelected
                     ? null
-                    : Border.all(color: AppColors.grayMid, width: 0.5),
+                    : Border.all(color: AppColors.border, width: 0.5),
               ),
               child: Text(
                 label,
@@ -443,7 +443,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         width: 18,
         height: 18,
         decoration: const BoxDecoration(
-          color: AppColors.teal,
+          color: AppColors.accentGreen,
           shape: BoxShape.circle,
         ),
         child: const Icon(Icons.check, color: AppColors.white, size: 11),
@@ -477,7 +477,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
       decoration: BoxDecoration(
         color: AppColors.white,
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.grayMid, width: 1.5),
+        border: Border.all(color: AppColors.border, width: 1.5),
       ),
     );
   }
@@ -490,7 +490,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         color: AppColors.white,
         shape: BoxShape.circle,
         border: Border.all(
-          color: AppColors.grayMid,
+          color: AppColors.border,
           width: 1.0,
         ),
       ),
@@ -516,9 +516,9 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     double borderWidth;
 
     if (isDone) {
-      bgColor = AppColors.tealLight;
-      borderColor = AppColors.tealMid;
-      titleColor = AppColors.tealDark;
+      bgColor = AppColors.accentGreenLight;
+      borderColor = AppColors.accentGreen;
+      titleColor = AppColors.accentGreenDark;
       borderWidth = 1.0;
     } else if (isNow) {
       bgColor = AppColors.white;
@@ -526,8 +526,8 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
       titleColor = AppColors.text;
       borderWidth = 1.5;
     } else {
-      bgColor = AppColors.grayLight;
-      borderColor = AppColors.grayMid;
+      bgColor = AppColors.surfaceVariant;
+      borderColor = AppColors.border;
       titleColor = AppColors.textMuted;
       borderWidth = 1.0;
     }
@@ -554,7 +554,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                 item.startTime!,
                 style: const TextStyle(
                   fontSize: 9,
-                  color: AppColors.textHint,
+                  color: AppColors.textMuted,
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -572,7 +572,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                 '0 photos',
                 style: TextStyle(
                   fontSize: 9,
-                  color: AppColors.teal,
+                  color: AppColors.accentGreen,
                 ),
               ),
             ] else if (isNow) ...[
@@ -594,7 +594,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                 Row(
                   children: [
                     const Icon(Icons.location_on_outlined,
-                        size: 9, color: AppColors.textHint),
+                        size: 9, color: AppColors.textMuted),
                     const SizedBox(width: 2),
                     Flexible(
                       child: Text(
@@ -603,7 +603,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 9,
-                          color: AppColors.textHint,
+                          color: AppColors.textMuted,
                         ),
                       ),
                     ),
@@ -659,10 +659,10 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.grayLight,
+          color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: AppColors.grayMid,
+            color: AppColors.border,
             width: 0.5,
             // dashed effect via custom painter below
           ),
@@ -671,7 +671,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
           'something unplanned happened?',
           style: TextStyle(
             fontSize: 10,
-            color: AppColors.textHint,
+            color: AppColors.textMuted,
           ),
         ),
       ),
@@ -818,7 +818,7 @@ class _TimelineRow extends StatelessWidget {
                     child: Center(
                       child: Container(
                         width: 1,
-                        color: AppColors.grayMid,
+                        color: AppColors.border,
                       ),
                     ),
                   ),
@@ -854,7 +854,7 @@ class _AvatarCircle extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.tealLight,
+        color: AppColors.accentGreenLight,
         shape: BoxShape.circle,
         border: Border.all(color: AppColors.white, width: 1.5),
       ),
@@ -864,7 +864,7 @@ class _AvatarCircle extends StatelessWidget {
           style: TextStyle(
             fontSize: size * 0.45,
             fontWeight: FontWeight.w600,
-            color: AppColors.tealDark,
+            color: AppColors.accentGreenDark,
           ),
         ),
       ),
@@ -893,7 +893,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.text : AppColors.textHint;
+    final color = selected ? AppColors.text : AppColors.textMuted;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

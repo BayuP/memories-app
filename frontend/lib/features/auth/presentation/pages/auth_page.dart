@@ -108,13 +108,13 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               const SizedBox(height: 20),
               Text(
                 'remember together',
-                style: AppTextStyles.tagline(),
+                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 6),
               Text(
                 'plan, capture, and keep the moments that matter',
-                style: AppTextStyles.bodySmall(color: AppColors.textMuted),
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -159,7 +159,7 @@ class _AppIcon extends StatelessWidget {
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: AppColors.grayLight,
+          color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         child: const Center(
@@ -274,7 +274,7 @@ class _AuthCard extends StatelessWidget {
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   size: 18,
-                  color: AppColors.textHint,
+                  color: AppColors.textMuted,
                 ),
               ),
               validator: (v) {
@@ -336,7 +336,7 @@ class _LabeledField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.uiLabel()),
+        Text(label, style: AppTextStyles.labelSmall),
         const SizedBox(height: 4),
         SizedBox(
           height: 34,
@@ -345,7 +345,7 @@ class _LabeledField extends StatelessWidget {
             keyboardType: keyboardType,
             textInputAction: textInputAction,
             obscureText: obscureText,
-            style: AppTextStyles.uiInput(),
+            style: AppTextStyles.bodyMedium,
             decoration: InputDecoration(
               hintText: hint,
               suffixIcon: suffixIcon,
@@ -372,7 +372,7 @@ class _OrDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             'or',
-            style: AppTextStyles.bodySmall(color: AppColors.textHint),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
           ),
         ),
         const Expanded(child: Divider()),
@@ -398,13 +398,13 @@ class _GoogleButton extends StatelessWidget {
             width: 18,
             height: 18,
             decoration: const BoxDecoration(
-              color: AppColors.grayLight,
+              color: AppColors.surfaceVariant,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 'G',
-                style: AppTextStyles.uiLabel(color: AppColors.textMuted)
+                style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)
                     .copyWith(fontSize: 10, fontWeight: FontWeight.w700),
               ),
             ),
@@ -412,7 +412,7 @@ class _GoogleButton extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             'continue with Google',
-            style: AppTextStyles.button(color: AppColors.text),
+            style: AppTextStyles.button.copyWith(color: AppColors.text),
           ),
         ],
       ),
@@ -439,7 +439,7 @@ class _ToggleModeButton extends StatelessWidget {
         child: RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
-            style: AppTextStyles.bodySmall(color: AppColors.textMuted),
+            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
             children: [
               TextSpan(
                 text: isSignUp
@@ -448,10 +448,10 @@ class _ToggleModeButton extends StatelessWidget {
               ),
               TextSpan(
                 text: isSignUp ? 'log in' : 'sign up',
-                style: AppTextStyles.bodySmall(color: AppColors.teal).copyWith(
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.accentGreen).copyWith(
                   fontWeight: FontWeight.w600,
                   decoration: TextDecoration.underline,
-                  decorationColor: AppColors.teal,
+                  decorationColor: AppColors.accentGreen,
                 ),
               ),
             ],

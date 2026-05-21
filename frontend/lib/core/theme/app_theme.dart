@@ -38,6 +38,13 @@ abstract final class AppColors {
   // Accent — warm muted green (replaces old teal, maps legacy accentGreen usage)
   static const Color accentGreen = Color(0xFF6B8F71);
   static const Color accentGreenLight = Color(0xFFE4EDE5);
+  static const Color accentGreenDark = Color(0xFF4E6B53); // green text on light-green bg
+
+  // Warm semantic accents (migrated from legacy coral/amber)
+  static const Color coral = Color(0xFFB5715A);      // warm terracotta
+  static const Color coralLight = Color(0xFFF3E3DC); // terracotta tint
+  static const Color amber = Color(0xFFB8893D);      // warm ochre
+  static const Color amberLight = Color(0xFFF0E6CF); // ochre tint
 
   // Status badge backgrounds (warm-neutralised)
   static const Color badgeOngoing = Color(0xFFE4EDE5);  // muted warm green tint

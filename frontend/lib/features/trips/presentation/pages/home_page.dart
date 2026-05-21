@@ -68,7 +68,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: tripsAsync.when(
                 loading: () => const Center(
                   child: CircularProgressIndicator(
-                    color: AppColors.teal,
+                    color: AppColors.accentGreen,
                     strokeWidth: 2,
                   ),
                 ),
@@ -83,8 +83,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         const SizedBox(height: 12),
                         Text(
                           'failed to load trips',
-                          style: AppTextStyles.bodyMedium(
-                              color: AppColors.textMuted),
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
@@ -100,7 +99,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 data: (trips) {
                   final filtered = _applyFilter(trips);
                   return RefreshIndicator(
-                    color: AppColors.teal,
+                    color: AppColors.accentGreen,
                     onRefresh: () =>
                         ref.read(tripsProvider.notifier).refresh(),
                     child: filtered.isEmpty
@@ -145,7 +144,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           Text(
             'your trips',
-            style: AppTextStyles.bodyLarge(color: AppColors.text).copyWith(
+            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.text).copyWith(
               fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
@@ -164,7 +163,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               width: 28,
               height: 28,
               decoration: const BoxDecoration(
-                color: AppColors.grayLight,
+                color: AppColors.surfaceVariant,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -221,7 +220,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         SizedBox(height: MediaQuery.of(context).size.height * 0.25),
         const Column(
           children: [
-            Icon(Icons.map_outlined, size: 48, color: AppColors.teal),
+            Icon(Icons.map_outlined, size: 48, color: AppColors.accentGreen),
             SizedBox(height: 16),
             Text(
               'no trips yet',
@@ -339,11 +338,11 @@ class _FilterPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppColors.text : AppColors.grayLight,
+          color: selected ? AppColors.text : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(AppRadius.full),
           border: selected
               ? null
-              : Border.all(color: AppColors.grayMid, width: 0.5),
+              : Border.all(color: AppColors.border, width: 0.5),
         ),
         child: Text(
           label,
@@ -375,7 +374,7 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.text : AppColors.textHint;
+    final color = selected ? AppColors.text : AppColors.textMuted;
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
