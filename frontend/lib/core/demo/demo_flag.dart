@@ -1,3 +1,5 @@
-// Set to true to run in demo mode (no backend required).
-// Flip to false before connecting to a real backend.
-const bool kDemoMode = true;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// Runtime toggle — true = mock data, false = real backend.
+// Change in Profile page without rebuilding.
+final demoModeProvider = StateProvider<bool>((ref) => true);

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:memories_app/features/trips/data/datasources/trips_remote_datasource.dart';
 import 'package:memories_app/features/trips/data/repositories/trips_repository_impl.dart';
@@ -11,8 +12,10 @@ import 'package:memories_app/features/trips/domain/repositories/trips_repository
 // ---------------------------------------------------------------------------
 
 final tripsRemoteDataSourceProvider = Provider<TripsRemoteDataSource>((ref) {
-  final client = ref.watch(apiClientProvider);
-  return TripsRemoteDataSource(client);
+  return TripsRemoteDataSource(
+    ref.watch(apiClientProvider),
+    demoMode: ref.watch(demoModeProvider),
+  );
 });
 
 final tripsRepositoryProvider = Provider<TripsRepository>((ref) {

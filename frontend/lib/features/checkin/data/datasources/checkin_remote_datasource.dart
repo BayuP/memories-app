@@ -1,13 +1,14 @@
 import 'package:dio/dio.dart';
-import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/core/demo/mock_data.dart';
 import 'package:memories_app/core/network/api_client.dart';
 import 'package:memories_app/features/checkin/data/models/checkin_model.dart';
 
 class CheckinRemoteDataSource {
-  const CheckinRemoteDataSource(this._apiClient);
+  CheckinRemoteDataSource(this._apiClient, {required bool demoMode})
+      : _demoMode = demoMode;
 
   final ApiClient _apiClient;
+  final bool _demoMode;
 
   Future<CheckinModel> createCheckin({
     required String tripId,
@@ -18,7 +19,7 @@ class CheckinRemoteDataSource {
     double? lng,
   }) async {
     // DEMO: return a stub checkin (no server round-trip)
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 300));
       return CheckinModel(
         id: 'checkin-demo-${DateTime.now().millisecondsSinceEpoch}',
@@ -49,7 +50,7 @@ class CheckinRemoteDataSource {
 
   Future<CheckinModel> getCheckin(String id) async {
     // DEMO: look up in mock data
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 250));
       final entity = mockCheckinById(id);
       return CheckinModel(
@@ -111,7 +112,7 @@ class CheckinRemoteDataSource {
     String? sharedWith,
   }) async {
     // DEMO: return stub memory model
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 200));
       return CheckinMemoryModel(note: note, mood: mood, sharedWith: sharedWith);
     }
@@ -132,7 +133,7 @@ class CheckinRemoteDataSource {
     String? notes,
   }) async {
     // DEMO: return stub logistics model
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 200));
       return CheckinLogisticsModel(cost: cost, currency: currency, notes: notes);
     }
@@ -154,7 +155,7 @@ class CheckinRemoteDataSource {
     int? rating,
   }) async {
     // DEMO: return stub recommendation model
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 200));
       return CheckinRecommendationModel(
         title: title,
@@ -179,7 +180,7 @@ class CheckinRemoteDataSource {
 
   Future<Map<String, String>> getMediaUploadUrl(String mime) async {
     // DEMO: return fake upload URL (upload step is skipped in demo)
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 100));
       return {
         'media_id': 'media-demo-${DateTime.now().millisecondsSinceEpoch}',
@@ -206,7 +207,7 @@ class CheckinRemoteDataSource {
     String mime,
   ) async {
     // DEMO: skip actual upload
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 100));
       return;
     }
@@ -236,7 +237,7 @@ class CheckinRemoteDataSource {
     double? lng,
   }) async {
     // DEMO: return stub media model (no server attachment)
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 100));
       return MediaModel(
         id: mediaId,
@@ -265,7 +266,7 @@ class CheckinRemoteDataSource {
 
   Future<void> deleteMedia(String mediaId) async {
     // DEMO: no-op
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 100));
       return;
     }

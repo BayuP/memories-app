@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
 import 'package:memories_app/core/theme/app_theme.dart';
 import 'package:memories_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:memories_app/features/profile/domain/entities/profile_entity.dart';
@@ -136,6 +137,8 @@ class _ProfileContent extends ConsumerWidget {
                             ),
                           ),
                         ),
+                      const SizedBox(height: 24),
+                      _DemoModeToggle(),
                     ],
                   ),
                 ),
@@ -475,6 +478,35 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           ),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+}
+
+class _DemoModeToggle extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDemo = ref.watch(demoModeProvider);
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: SwitchListTile(
+        title: Text(
+          'Demo Mode',
+          style: AppTextStyles.bodyMedium(color: AppColors.text),
+        ),
+        subtitle: Text(
+          isDemo ? 'Using mock data' : 'Using real backend',
+          style: AppTextStyles.bodySmall(color: AppColors.textMuted),
+        ),
+        value: isDemo,
+        activeColor: AppColors.teal,
+        onChanged: (val) {
+          ref.read(demoModeProvider.notifier).state = val;
+        },
       ),
     );
   }

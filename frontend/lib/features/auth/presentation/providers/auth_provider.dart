@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:memories_app/core/demo/demo_flag.dart';
+import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
 import 'package:memories_app/core/network/api_client.dart';
 import 'package:memories_app/core/network/secure_storage.dart';
 import 'package:memories_app/features/auth/data/datasources/auth_remote_datasource.dart';
@@ -62,7 +62,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   @override
   Future<AuthState> build() async {
     // DEMO: skip token check, return authenticated with mock user
-    if (kDemoMode) {
+    if (ref.watch(demoModeProvider)) {
       return const AuthState(status: AuthStatus.authenticated);
     }
     // DEMO: real token check below
@@ -79,7 +79,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String password,
   }) async {
     // DEMO: skip API call, mark authenticated immediately
-    if (kDemoMode) {
+    if (ref.read(demoModeProvider)) {
       await Future.delayed(const Duration(milliseconds: 400));
       state = const AsyncData(AuthState(status: AuthStatus.authenticated));
       return;
@@ -107,7 +107,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     required String displayName,
   }) async {
     // DEMO: skip API call, mark authenticated immediately
-    if (kDemoMode) {
+    if (ref.read(demoModeProvider)) {
       await Future.delayed(const Duration(milliseconds: 400));
       state = const AsyncData(AuthState(status: AuthStatus.authenticated));
       return;
@@ -135,7 +135,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   Future<void> signOut() async {
     // DEMO: skip token clear, just mark unauthenticated
-    if (kDemoMode) {
+    if (ref.read(demoModeProvider)) {
       state = const AsyncData(AuthState(status: AuthStatus.unauthenticated));
       return;
     }

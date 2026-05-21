@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:memories_app/core/demo/demo_flag.dart';
+import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
 import 'package:memories_app/core/demo/mock_data.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
@@ -117,7 +117,7 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
     setState(() => _step = 2);
 
     // DEMO: skip real API — use mock Bali itinerary to simulate AI generation
-    if (kDemoMode) {
+    if (ref.read(demoModeProvider)) {
       // Simulate the generating animation for a moment
       await Future.delayed(const Duration(seconds: 3));
       if (!mounted) return;

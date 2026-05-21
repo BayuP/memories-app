@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:memories_app/core/demo/demo_flag.dart';
+import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
 import 'package:memories_app/core/theme/app_theme.dart';
 import 'package:memories_app/features/checkin/presentation/providers/checkin_provider.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
@@ -754,7 +754,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   Future<void> _save() async {
     // DEMO: show success snackbar and pop without hitting the API
-    if (kDemoMode) {
+    if (ref.read(demoModeProvider)) {
       setState(() => _isSaving = true);
       await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {

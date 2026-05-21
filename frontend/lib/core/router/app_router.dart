@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:memories_app/core/demo/demo_flag.dart';
+import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
 import 'package:memories_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:memories_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:memories_app/features/checkin/presentation/pages/checkin_page.dart';
@@ -39,7 +39,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: authListenable,
     redirect: (context, state) async {
       // DEMO: immediately resolve to home when at root
-      if (kDemoMode && state.matchedLocation == AppRoutes.root) {
+      if (ref.read(demoModeProvider) && state.matchedLocation == AppRoutes.root) {
         return AppRoutes.home;
       }
 

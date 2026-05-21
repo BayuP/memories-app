@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:memories_app/features/checkin/data/datasources/checkin_remote_datasource.dart';
 import 'package:memories_app/features/checkin/data/repositories/checkin_repository_impl.dart';
@@ -11,8 +12,10 @@ import 'package:memories_app/features/checkin/domain/repositories/checkin_reposi
 
 final checkinRemoteDataSourceProvider =
     Provider<CheckinRemoteDataSource>((ref) {
-  final client = ref.watch(apiClientProvider);
-  return CheckinRemoteDataSource(client);
+  return CheckinRemoteDataSource(
+    ref.watch(apiClientProvider),
+    demoMode: ref.watch(demoModeProvider),
+  );
 });
 
 final checkinRepositoryProvider = Provider<CheckinRepository>((ref) {

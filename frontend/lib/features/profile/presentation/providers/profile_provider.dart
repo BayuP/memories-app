@@ -30,7 +30,7 @@ class ProfileNotifier extends AsyncNotifier<ProfileEntity> {
   @override
   Future<ProfileEntity> build() async {
     // DEMO: return mock profile immediately
-    if (kDemoMode) {
+    if (ref.watch(demoModeProvider)) {
       await Future.delayed(const Duration(milliseconds: 200));
       return mockProfile;
     }
@@ -40,7 +40,7 @@ class ProfileNotifier extends AsyncNotifier<ProfileEntity> {
 
   Future<void> updateProfile({String? displayName, String? avatarUrl}) async {
     // DEMO: apply edit in-memory only
-    if (kDemoMode) {
+    if (ref.read(demoModeProvider)) {
       await Future.delayed(const Duration(milliseconds: 200));
       final current = state.value ?? mockProfile;
       state = AsyncData(
@@ -66,7 +66,7 @@ class ProfileNotifier extends AsyncNotifier<ProfileEntity> {
 
   Future<void> refresh() async {
     // DEMO: just re-emit mock profile
-    if (kDemoMode) {
+    if (ref.read(demoModeProvider)) {
       state = const AsyncLoading();
       await Future.delayed(const Duration(milliseconds: 200));
       state = AsyncData(mockProfile);
