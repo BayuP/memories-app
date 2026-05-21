@@ -69,5 +69,32 @@ Flutter app scaffolded with full clean architecture (data/domain/presentation pe
 - Offline draft support
 - Crash reporting + store listings
 
+## Phase 6 — End-to-End Frontend Wiring ✅ DONE (May 2026)
+
+**Goal:** Replace all mock/demo data with real API calls so app is usable on a real trip.
+
+### Backend additions (done):
+- `PATCH /checkins/{checkinID}` — update vibe + captured_at. Dynamic SET clause, returns full CheckinResponse.
+- `PATCH /trips/{tripID}/items/reorder` — batch sort_order update. Registered before `{itemID}` wildcard in router.
+- Migration `0002_checkins_vibe_items_sort_order.up.sql`: adds `vibe TEXT CHECK (vibe IN ('loved','ok','meh'))` to `checkins`, adds `sort_order INTEGER NOT NULL DEFAULT 0` + index to `itinerary_items`.
+- `checkin.Checkin` model now includes `Vibe *string`; `CheckinResponse` exposes it.
+
+### Frontend wiring (done):
+- `HomeScreen` → `ConsumerStatefulWidget`, wired to `tripsProvider`. Mock trips removed. Derives UI `TripStatus` (ongoing/upcoming/past) from `startDate`/`endDate`. Deterministic `coverColor` from trip ID hash.
+- `HomeScreen` navigation passes `tripId` + `tripTitle` to `TripViewScreen`.
+- `TripViewScreen` → `ConsumerStatefulWidget`, accepts `tripId` + `tripTitle` params. Uses `itineraryItemsProvider(tripId)` for real items. Generates `DayItem` list from unique day numbers + trip `startDate`. Derives `TimelineItemState` from time-of-day. Passes `tripId`+`itemId`+`kind` to `CheckInScreen`.
+- `CheckInScreen` → `ConsumerStatefulWidget`, accepts `tripId`, `itemId?`, `kind`. Real `image_picker` integration (`pickMultiImage`). Upload flow: `getUploadURL → uploadToR2 → attachMedia`. On submit: creates checkin, uploads files, saves memory layer (note+vibe), pops with `true`.
+
+### Remaining for V1:
+- Fix Java 26/Gradle 8.14 conflict for `flutter run` on Android emulator
+- Audit Logistics layer privacy enforcement (no explicit handler-level check yet)
+- Google OAuth (`POST /auth/google`)
+- EXIF `takenAt` read from picked photo and sent on `attachMedia`
+- Profile screen wired to real user data (`GET /users/me`)
+- SpontaneousBucket wired (shows real spontaneous check-ins per day)
+- Push notifications
+- Offline draft support
+- Crash reporting + store listings
+
 ## V1 Success
 Used on one real trip with wife + 3 small hangouts, beats WhatsApp + Notes.

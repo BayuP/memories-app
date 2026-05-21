@@ -28,6 +28,7 @@ func (h *Handler) Routes() func(chi.Router) {
 	return func(r chi.Router) {
 		r.Post("/trips/{tripID}/checkins", h.create)
 		r.Get("/checkins/{checkinID}", h.get)
+		r.Patch("/checkins/{checkinID}", h.update)
 		r.Put("/checkins/{checkinID}/memory", h.upsertMemory)
 		r.Put("/checkins/{checkinID}/logistics", h.upsertLogistics)
 		r.Put("/checkins/{checkinID}/recommendation", h.upsertRecommendation)
@@ -91,6 +92,43 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.log.ErrorContext(r.Context(), "get checkin", "error", err)
+		httpx.ErrInternal(w)
+		return
+	}
+
+	httpx.WriteJSON(w, http.StatusOK, checkin)
+}
+
+func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := httpx.UserIDFromContext(r.Context())
+	if !ok {
+		httpx.ErrUnauthorized(w)
+		return
+	}
+
+	checkinID, err := uuid.Parse(chi.URLParam(r, "checkinID"))
+	if err != nil {
+		httpx.ErrNotFound(w, "checkin")
+		return
+	}
+
+	var req UpdateCheckinRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.ErrBadRequest(w, "invalid request body")
+		return
+	}
+
+	checkin, err := h.svc.UpdateCheckin(r.Context(), checkinID, callerID, req)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			httpx.ErrNotFound(w, "checkin")
+			return
+		}
+		if errors.Is(err, ErrForbidden) {
+			httpx.ErrForbidden(w)
+			return
+		}
+		h.log.ErrorContext(r.Context(), "update checkin", "error", err)
 		httpx.ErrInternal(w)
 		return
 	}

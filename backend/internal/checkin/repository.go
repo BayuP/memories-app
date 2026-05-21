@@ -9,10 +9,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// UpdateCheckinParams carries the optional fields for a checkin update.
+type UpdateCheckinParams struct {
+	Vibe       *string
+	CapturedAt *time.Time
+}
+
 // Repository defines the data access contract for check-ins and their layers.
 type Repository interface {
 	CreateCheckin(ctx context.Context, p CreateCheckinParams) (*Checkin, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*Checkin, error)
+	UpdateCheckin(ctx context.Context, id uuid.UUID, p UpdateCheckinParams) (*Checkin, error)
 
 	UpsertMemory(ctx context.Context, checkinID uuid.UUID, p UpsertMemoryParams) (*Memory, error)
 	FindMemory(ctx context.Context, checkinID uuid.UUID) (*Memory, error)
@@ -72,7 +79,7 @@ func (r *postgresRepository) CreateCheckin(ctx context.Context, p CreateCheckinP
 	row := r.db.QueryRow(ctx,
 		`INSERT INTO checkins (trip_id, author_id, itinerary_item_id, captured_at, lat, lng, kind)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7)
-		 RETURNING id, trip_id, author_id, itinerary_item_id, captured_at, lat, lng, kind, created_at, updated_at`,
+		 RETURNING id, trip_id, author_id, itinerary_item_id, captured_at, lat, lng, kind, vibe, created_at, updated_at`,
 		p.TripID, p.AuthorID, p.ItineraryItemID, p.CapturedAt, p.Lat, p.Lng, p.Kind,
 	)
 	return scanCheckin(row)
@@ -80,13 +87,41 @@ func (r *postgresRepository) CreateCheckin(ctx context.Context, p CreateCheckinP
 
 func (r *postgresRepository) FindByID(ctx context.Context, id uuid.UUID) (*Checkin, error) {
 	row := r.db.QueryRow(ctx,
-		`SELECT id, trip_id, author_id, itinerary_item_id, captured_at, lat, lng, kind, created_at, updated_at
+		`SELECT id, trip_id, author_id, itinerary_item_id, captured_at, lat, lng, kind, vibe, created_at, updated_at
 		 FROM checkins WHERE id = $1`,
 		id,
 	)
 	c, err := scanCheckin(row)
 	if err != nil {
 		return nil, fmt.Errorf("find checkin by id: %w", err)
+	}
+	return c, nil
+}
+
+func (r *postgresRepository) UpdateCheckin(ctx context.Context, id uuid.UUID, p UpdateCheckinParams) (*Checkin, error) {
+	// Build SET clause dynamically — only update provided fields.
+	setClauses := []string{"updated_at = now()"}
+	args := []any{id} // $1 = id
+	argIdx := 2
+
+	if p.Vibe != nil {
+		setClauses = append(setClauses, fmt.Sprintf("vibe = $%d", argIdx))
+		args = append(args, p.Vibe)
+		argIdx++
+	}
+	if p.CapturedAt != nil {
+		setClauses = append(setClauses, fmt.Sprintf("captured_at = $%d", argIdx))
+		args = append(args, p.CapturedAt)
+		argIdx++
+	}
+
+	query := `UPDATE checkins SET ` + joinClauses(setClauses) +
+		` WHERE id = $1 RETURNING id, trip_id, author_id, itinerary_item_id, captured_at, lat, lng, kind, vibe, created_at, updated_at`
+
+	row := r.db.QueryRow(ctx, query, args...)
+	c, err := scanCheckin(row)
+	if err != nil {
+		return nil, fmt.Errorf("update checkin: %w", err)
 	}
 	return c, nil
 }
@@ -195,11 +230,23 @@ func scanCheckin(row rowScanner) (*Checkin, error) {
 	c := &Checkin{}
 	if err := row.Scan(
 		&c.ID, &c.TripID, &c.AuthorID, &c.ItineraryItemID,
-		&c.CapturedAt, &c.Lat, &c.Lng, &c.Kind, &c.CreatedAt, &c.UpdatedAt,
+		&c.CapturedAt, &c.Lat, &c.Lng, &c.Kind, &c.Vibe, &c.CreatedAt, &c.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
 	return c, nil
+}
+
+// joinClauses joins SET clause fragments with ", ".
+func joinClauses(clauses []string) string {
+	result := ""
+	for i, c := range clauses {
+		if i > 0 {
+			result += ", "
+		}
+		result += c
+	}
+	return result
 }
 
 func scanMemory(row rowScanner) (*Memory, error) {

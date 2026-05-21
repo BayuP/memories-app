@@ -88,6 +88,39 @@ func (s *Service) GetCheckin(ctx context.Context, checkinID, callerID uuid.UUID)
 	return &resp, nil
 }
 
+// UpdateCheckin updates the vibe and/or captured_at fields of a check-in.
+func (s *Service) UpdateCheckin(ctx context.Context, checkinID, callerID uuid.UUID, req UpdateCheckinRequest) (*CheckinResponse, error) {
+	_, err := s.findAndCheckMember(ctx, checkinID, callerID)
+	if err != nil {
+		return nil, err
+	}
+
+	params := UpdateCheckinParams{}
+	if req.Vibe != nil {
+		params.Vibe = req.Vibe
+	}
+	if req.CapturedAt != nil {
+		t, err := time.Parse(time.RFC3339, *req.CapturedAt)
+		if err != nil {
+			return nil, fmt.Errorf("invalid captured_at: %w", err)
+		}
+		params.CapturedAt = &t
+	}
+
+	c, err := s.repo.UpdateCheckin(ctx, checkinID, params)
+	if err != nil {
+		return nil, fmt.Errorf("update checkin: %w", err)
+	}
+
+	mem, _ := s.repo.FindMemory(ctx, checkinID)
+	log, _ := s.repo.FindLogistics(ctx, checkinID)
+	rec, _ := s.repo.FindRecommendation(ctx, checkinID)
+	media, _ := s.repo.ListMediaByCheckinID(ctx, checkinID)
+
+	resp := toCheckinResponse(c, mem, log, rec, media)
+	return &resp, nil
+}
+
 // UpsertMemory creates or updates the memory layer.
 func (s *Service) UpsertMemory(ctx context.Context, checkinID, callerID uuid.UUID, req UpsertMemoryRequest) (*MemoryResponse, error) {
 	c, err := s.findAndCheckMember(ctx, checkinID, callerID)

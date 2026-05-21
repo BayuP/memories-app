@@ -494,14 +494,14 @@ class _DemoModeToggle extends ConsumerWidget {
       child: SwitchListTile(
         title: Text(
           'Demo Mode',
-          style: AppTextStyles.bodyMedium(color: AppColors.text),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.text),
         ),
         subtitle: Text(
           isDemo ? 'Using mock data' : 'Using real backend',
-          style: AppTextStyles.bodySmall(color: AppColors.textMuted),
+          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
         ),
         value: isDemo,
-        activeColor: AppColors.teal,
+        activeColor: AppColors.primary,
         onChanged: (val) {
           ref.read(demoModeProvider.notifier).state = val;
         },

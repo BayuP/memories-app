@@ -8,6 +8,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// ReorderItemParam carries id and desired sort_order for a single item.
+type ReorderItemParam struct {
+	ID        uuid.UUID
+	SortOrder int
+}
+
 // CreateItemParams carries required fields for item creation.
 type CreateItemParams struct {
 	TripID       uuid.UUID
@@ -42,6 +48,7 @@ type Repository interface {
 	UpdateItem(ctx context.Context, id uuid.UUID, p UpdateItemParams) (*Item, error)
 	DeleteItem(ctx context.Context, id uuid.UUID) error
 	DeleteByTripIDAndSource(ctx context.Context, tripID uuid.UUID, source string) error
+	ReorderItems(ctx context.Context, tripID uuid.UUID, items []ReorderItemParam) error
 }
 
 type postgresRepository struct {
@@ -128,6 +135,29 @@ func (r *postgresRepository) DeleteByTripIDAndSource(ctx context.Context, tripID
 	)
 	if err != nil {
 		return fmt.Errorf("delete items by source: %w", err)
+	}
+	return nil
+}
+
+func (r *postgresRepository) ReorderItems(ctx context.Context, tripID uuid.UUID, items []ReorderItemParam) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("reorder items begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx) //nolint:errcheck
+
+	for _, item := range items {
+		_, err := tx.Exec(ctx,
+			`UPDATE itinerary_items SET sort_order = $2, updated_at = now() WHERE id = $1 AND trip_id = $3`,
+			item.ID, item.SortOrder, tripID,
+		)
+		if err != nil {
+			return fmt.Errorf("reorder item %s: %w", item.ID, err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("reorder items commit: %w", err)
 	}
 	return nil
 }

@@ -3,7 +3,14 @@ import 'package:memories_app/core/theme/app_theme.dart';
 import 'ai_itinerary_review_screen.dart';
 
 class AiGeneratingScreen extends StatefulWidget {
-  const AiGeneratingScreen({super.key});
+  const AiGeneratingScreen({
+    super.key,
+    this.tripId,
+    this.tripTitle,
+  });
+
+  final String? tripId;
+  final String? tripTitle;
 
   @override
   State<AiGeneratingScreen> createState() => _AiGeneratingScreenState();
@@ -51,7 +58,10 @@ class _AiGeneratingScreenState extends State<AiGeneratingScreen>
       if (status == AnimationStatus.completed && mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-              builder: (_) => const AiItineraryReviewScreen()),
+              builder: (_) => AiItineraryReviewScreen(
+                        tripId: widget.tripId ?? '',
+                        tripTitle: widget.tripTitle,
+                      )),
         );
       }
     });

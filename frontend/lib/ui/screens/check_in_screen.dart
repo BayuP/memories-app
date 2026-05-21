@@ -1,21 +1,32 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
+import 'package:memories_app/features/checkin/presentation/providers/checkin_provider.dart';
 import '../widgets/layer_tabs.dart';
 import '../widgets/media_thumbnail_strip.dart';
 
-class CheckInScreen extends StatefulWidget {
+class CheckInScreen extends ConsumerStatefulWidget {
   const CheckInScreen({
     super.key,
     this.editMode = false,
+    required this.tripId,
+    this.itemId,
+    this.kind = 'planned',
   });
 
   final bool editMode;
+  final String tripId;
+  final String? itemId;
+  final String kind;
 
   @override
-  State<CheckInScreen> createState() => _CheckInScreenState();
+  ConsumerState<CheckInScreen> createState() => _CheckInScreenState();
 }
 
-class _CheckInScreenState extends State<CheckInScreen> {
+class _CheckInScreenState extends ConsumerState<CheckInScreen> {
   CheckInLayer _layer = CheckInLayer.memory;
   int _mediaIndex = 0;
   int _coverIndex = 0;
@@ -24,13 +35,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
   String _vibe = '';
   bool _exifConfirmed = false;
 
-  static const _mockMediaCount = 4;
-  static const _mockMediaColors = [
-    Color(0xFFC97D4E),
-    Color(0xFF4A9B7F),
-    Color(0xFF7B9EC9),
-    Color(0xFFB97DBB),
-  ];
+  final List<XFile> _pickedFiles = [];
+  bool _isSubmitting = false;
 
   static const _vibeOptions = [
     ('😍', 'Loved it'),
@@ -44,6 +50,83 @@ class _CheckInScreenState extends State<CheckInScreen> {
     _locationController.dispose();
     super.dispose();
   }
+
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final files = await picker.pickMultiImage(imageQuality: 85);
+    if (files.isNotEmpty) {
+      setState(() => _pickedFiles.addAll(files));
+    }
+  }
+
+  Future<void> _submit() async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      final repo = ref.read(checkinRepositoryProvider);
+
+      // 1. Create checkin
+      final checkin = await repo.createCheckin(
+        tripId: widget.tripId,
+        kind: widget.kind,
+        capturedAt: DateTime.now(),
+        itineraryItemId: widget.itemId,
+      );
+
+      // 2. Upload each picked file
+      for (final file in _pickedFiles) {
+        final mime = _mimeFromPath(file.path);
+        final urlInfo = await repo.getMediaUploadUrl(mime);
+        final bytes = await file.readAsBytes();
+        await repo.uploadMediaToR2(urlInfo['upload_url']!, bytes, mime);
+        await repo.attachMedia(
+          urlInfo['media_id']!,
+          checkinId: checkin.id,
+        );
+      }
+
+      // 3. Save memory layer (note + vibe/mood)
+      final note = _noteController.text.trim();
+      final moodApi = _vibeToApi(_vibe);
+      if (note.isNotEmpty || moodApi != null) {
+        await repo.updateMemory(
+          checkin.id,
+          note: note.isEmpty ? null : note,
+          mood: moodApi,
+        );
+      }
+
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  String _mimeFromPath(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    return switch (ext) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'heic' => 'image/heic',
+      'mp4' => 'video/mp4',
+      'mov' => 'video/quicktime',
+      _ => 'image/jpeg',
+    };
+  }
+
+  String? _vibeToApi(String vibe) => switch (vibe) {
+        'Loved it' => 'loved',
+        'It was ok' => 'ok',
+        'Meh' => 'meh',
+        _ => null,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -96,22 +179,31 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   // Media viewer
                   _MediaViewer(
                     selectedIndex: _mediaIndex,
-                    totalCount: _mockMediaCount,
-                    colors: _mockMediaColors,
+                    files: _pickedFiles,
                     onSwipe: (i) => setState(() => _mediaIndex = i),
+                    onAdd: _pickImages,
                   ),
                   const SizedBox(height: AppSpacing.sm),
 
                   // Thumbnail strip
                   MediaThumbnailStrip(
-                    itemCount: _mockMediaCount,
+                    itemCount: _pickedFiles.length,
                     coverIndex: _coverIndex,
                     selectedIndex: _mediaIndex,
-                    colors: _mockMediaColors,
+                    colors: const [],
                     onThumbnailTap: (i) => setState(() => _mediaIndex = i),
                     onSetCover: (i) => setState(() => _coverIndex = i),
-                    onRemove: (i) {},
-                    onAddTap: () {},
+                    onRemove: (i) => setState(() {
+                      _pickedFiles.removeAt(i);
+                      // Keep indices in bounds after removal
+                      if (_mediaIndex >= _pickedFiles.length && _mediaIndex > 0) {
+                        _mediaIndex = _pickedFiles.length - 1;
+                      }
+                      if (_coverIndex >= _pickedFiles.length && _coverIndex > 0) {
+                        _coverIndex = _pickedFiles.length - 1;
+                      }
+                    }),
+                    onAddTap: _pickImages,
                   ),
                   const SizedBox(height: AppSpacing.md),
 
@@ -140,11 +232,11 @@ class _CheckInScreenState extends State<CheckInScreen> {
                           onExifConfirm: () =>
                               setState(() => _exifConfirmed = true),
                         ),
-                      CheckInLayer.logistics => _LogisticsLayer(
-                          key: const ValueKey('logistics'),
+                      CheckInLayer.logistics => const _LogisticsLayer(
+                          key: ValueKey('logistics'),
                         ),
-                      CheckInLayer.recommendation => _RecommendationLayer(
-                          key: const ValueKey('rec'),
+                      CheckInLayer.recommendation => const _RecommendationLayer(
+                          key: ValueKey('rec'),
                         ),
                     },
                   ),
@@ -157,7 +249,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
           // Bottom action bar
           _BottomActionBar(
             editMode: widget.editMode,
-            onAction: () => Navigator.of(context).pop(),
+            isLoading: _isSubmitting,
+            onAction: widget.editMode ? () => Navigator.of(context).pop() : _submit,
           ),
         ],
       ),
@@ -172,34 +265,52 @@ class _CheckInScreenState extends State<CheckInScreen> {
 class _MediaViewer extends StatelessWidget {
   const _MediaViewer({
     required this.selectedIndex,
-    required this.totalCount,
-    required this.colors,
+    required this.files,
     required this.onSwipe,
+    this.onAdd,
   });
 
   final int selectedIndex;
-  final int totalCount;
-  final List<Color> colors;
+  final List<XFile> files;
   final ValueChanged<int> onSwipe;
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
+    if (files.isEmpty) {
+      return GestureDetector(
+        onTap: onAdd,
+        child: Container(
+          height: 320,
+          color: const Color(0xFFF0EDE8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.add_photo_alternate_outlined,
+                  size: 48, color: AppColors.textSecondary),
+              const SizedBox(height: 8),
+              Text(
+                'Add photos',
+                style: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Stack(
       children: [
         SizedBox(
           height: 320,
           child: PageView.builder(
-            itemCount: totalCount,
+            itemCount: files.length,
             onPageChanged: onSwipe,
-            itemBuilder: (context, index) => Container(
-              color: colors[index % colors.length],
-              child: Center(
-                child: Icon(
-                  Icons.photo_outlined,
-                  size: 48,
-                  color: Colors.white.withOpacity(0.4),
-                ),
-              ),
+            itemBuilder: (context, index) => Image.file(
+              File(files[index].path),
+              fit: BoxFit.cover,
+              width: double.infinity,
             ),
           ),
         ),
@@ -211,7 +322,7 @@ class _MediaViewer extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
-              totalCount,
+              files.length,
               (i) => AnimatedContainer(
                 duration: AppDurations.fast,
                 width: i == selectedIndex ? 20 : 6,
@@ -220,7 +331,7 @@ class _MediaViewer extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: i == selectedIndex
                       ? Colors.white
-                      : Colors.white.withOpacity(0.5),
+                      : Colors.white.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -236,7 +347,7 @@ class _MediaViewer extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.45),
+                color: Colors.black.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
@@ -320,7 +431,7 @@ class _MemoryLayer extends StatelessWidget {
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: selected
-                        ? AppColors.primary.withOpacity(0.1)
+                        ? AppColors.primary.withValues(alpha: 0.1)
                         : AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                     border: Border.all(
@@ -580,20 +691,20 @@ class _RecommendationLayer extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text('Badge', style: AppTextStyles.labelMedium),
           const SizedBox(height: AppSpacing.sm),
-          Row(
+          const Row(
             children: [
               _BadgeOption(
                 label: 'Must-visit',
                 icon: Icons.star_rounded,
                 color: AppColors.primary,
               ),
-              const SizedBox(width: AppSpacing.sm),
+              SizedBox(width: AppSpacing.sm),
               _BadgeOption(
                 label: 'Hidden gem',
                 icon: Icons.eco_outlined,
                 color: AppColors.accentGreen,
               ),
-              const SizedBox(width: AppSpacing.sm),
+              SizedBox(width: AppSpacing.sm),
               _BadgeOption(
                 label: 'Skip it',
                 icon: Icons.thumb_down_outlined,
@@ -648,10 +759,12 @@ class _BottomActionBar extends StatelessWidget {
   const _BottomActionBar({
     required this.editMode,
     required this.onAction,
+    this.isLoading = false,
   });
 
   final bool editMode;
   final VoidCallback onAction;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -670,11 +783,22 @@ class _BottomActionBar extends StatelessWidget {
         width: double.infinity,
         height: 52,
         child: ElevatedButton.icon(
-          onPressed: onAction,
-          icon: Icon(
-            editMode ? Icons.save_rounded : Icons.check_circle_outline_rounded,
-            size: 18,
-          ),
+          onPressed: isLoading ? null : onAction,
+          icon: isLoading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : Icon(
+                  editMode
+                      ? Icons.save_rounded
+                      : Icons.check_circle_outline_rounded,
+                  size: 18,
+                ),
           label: Text(
             editMode ? 'Save changes' : 'Check in',
             style: AppTextStyles.labelLarge.copyWith(color: Colors.white),

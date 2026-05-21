@@ -155,6 +155,27 @@ func (s *Service) DeleteItem(ctx context.Context, tripID, itemID, callerID uuid.
 	return s.repo.DeleteItem(ctx, itemID)
 }
 
+// ReorderItems batch-updates sort_order for itinerary items within a trip.
+func (s *Service) ReorderItems(ctx context.Context, tripID, callerID uuid.UUID, req ReorderRequest) error {
+	if err := s.checkMember(ctx, tripID, callerID); err != nil {
+		return err
+	}
+
+	params := make([]ReorderItemParam, 0, len(req.Items))
+	for _, item := range req.Items {
+		id, err := uuid.Parse(item.ID)
+		if err != nil {
+			return fmt.Errorf("invalid item id %q: %w", item.ID, err)
+		}
+		params = append(params, ReorderItemParam{ID: id, SortOrder: item.SortOrder})
+	}
+
+	if err := s.repo.ReorderItems(ctx, tripID, params); err != nil {
+		return fmt.Errorf("reorder items: %w", err)
+	}
+	return nil
+}
+
 // BulkCreateAI replaces all AI-generated items with new ones.
 func (s *Service) BulkCreateAI(ctx context.Context, tripID uuid.UUID, inputs []AIItemInput) ([]ItemResponse, error) {
 	if err := s.repo.DeleteByTripIDAndSource(ctx, tripID, "ai"); err != nil {

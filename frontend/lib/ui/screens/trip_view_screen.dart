@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
+import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
+import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
 import '../widgets/day_selector_strip.dart';
 import '../widgets/timeline_item.dart';
 import '../widgets/spontaneous_bucket.dart';
@@ -8,243 +11,291 @@ import 'check_in_screen.dart';
 import 'spontaneous_add_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mock data
-// ─────────────────────────────────────────────────────────────────────────────
-
-const _mockDays = [
-  DayItem(label: 'D0', dayNumber: 0, date: 'May 19'),
-  DayItem(label: 'D1', dayNumber: 1, date: 'May 20'),
-  DayItem(label: 'D2', dayNumber: 2, date: 'May 21', isToday: true),
-  DayItem(label: 'D3', dayNumber: 3, date: 'May 22'),
-  DayItem(label: 'D4', dayNumber: 4, date: 'May 23'),
-];
-
-class _TimelineEntry {
-  const _TimelineEntry({
-    required this.state,
-    required this.time,
-    required this.name,
-    this.location,
-    this.photoCount = 0,
-    this.quote,
-  });
-
-  final TimelineItemState state;
-  final String time;
-  final String name;
-  final String? location;
-  final int photoCount;
-  final String? quote;
-}
-
-const _dayTimelines = <int, List<_TimelineEntry>>{
-  0: [
-    _TimelineEntry(
-      state: TimelineItemState.checkedIn,
-      time: '06:00',
-      name: 'Depart Jakarta (CGK)',
-      location: 'Soekarno-Hatta Airport',
-      photoCount: 2,
-      quote: 'The adventure begins!',
-    ),
-    _TimelineEntry(
-      state: TimelineItemState.checkedIn,
-      time: '08:30',
-      name: 'Arrive Bali (DPS)',
-      location: 'Ngurah Rai Airport',
-      photoCount: 5,
-      quote: 'Smells like sunscreen and frangipani already.',
-    ),
-  ],
-  1: [
-    _TimelineEntry(
-      state: TimelineItemState.checkedIn,
-      time: '10:00',
-      name: 'Check in to villa',
-      location: 'The Layar, Seminyak',
-      photoCount: 8,
-      quote: 'Pool is massive.',
-    ),
-    _TimelineEntry(
-      state: TimelineItemState.checkedIn,
-      time: '12:30',
-      name: 'Lunch at Sate Bali',
-      location: 'Jl. Laksmana',
-      photoCount: 4,
-    ),
-    _TimelineEntry(
-      state: TimelineItemState.checkedIn,
-      time: '18:30',
-      name: 'Sunset at Ku De Ta',
-      location: 'Jl. Kayu Aya',
-      photoCount: 11,
-      quote: 'Best sunset I\'ve seen.',
-    ),
-  ],
-  2: [
-    _TimelineEntry(
-      state: TimelineItemState.checkedIn,
-      time: '08:00',
-      name: 'Tegallalang Rice Terrace',
-      location: 'Tegallalang, Ubud',
-      photoCount: 14,
-      quote: 'Absolutely breathtaking.',
-    ),
-    _TimelineEntry(
-      state: TimelineItemState.current,
-      time: '11:00',
-      name: 'Ubud Monkey Forest',
-      location: 'Mandala Wisata Wenara Wana',
-    ),
-    _TimelineEntry(
-      state: TimelineItemState.upcoming,
-      time: '14:00',
-      name: 'Lunch at Locavore',
-      location: 'Jl. Dewi Sita, Ubud',
-    ),
-    _TimelineEntry(
-      state: TimelineItemState.upcoming,
-      time: '17:00',
-      name: 'Ubud Palace',
-      location: 'Puri Saren Agung',
-    ),
-  ],
-  3: [
-    _TimelineEntry(
-      state: TimelineItemState.upcoming,
-      time: '07:00',
-      name: 'Mount Batur sunrise hike',
-      location: 'Kintamani',
-    ),
-    _TimelineEntry(
-      state: TimelineItemState.upcoming,
-      time: '13:00',
-      name: 'Tirta Gangga Water Palace',
-      location: 'Karangasem',
-    ),
-  ],
-  4: [
-    _TimelineEntry(
-      state: TimelineItemState.upcoming,
-      time: '09:00',
-      name: 'Check out',
-      location: 'The Layar, Seminyak',
-    ),
-    _TimelineEntry(
-      state: TimelineItemState.upcoming,
-      time: '14:00',
-      name: 'Depart Bali (DPS)',
-      location: 'Ngurah Rai Airport',
-    ),
-  ],
-};
-
-const _spontaneousByDay = <int, List<SpontaneousPreviewItem>>{
-  1: [
-    SpontaneousPreviewItem(
-        name: 'Random beach walk', time: '16:30', hasPhoto: true),
-    SpontaneousPreviewItem(
-        name: 'Street corn cart', time: '19:00', hasPhoto: false),
-  ],
-  2: [],
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Screen
 // ─────────────────────────────────────────────────────────────────────────────
 
-class TripViewScreen extends StatefulWidget {
-  const TripViewScreen({super.key});
+class TripViewScreen extends ConsumerStatefulWidget {
+  const TripViewScreen({
+    super.key,
+    required this.tripId,
+    this.tripTitle,
+  });
+
+  final String tripId;
+  final String? tripTitle;
 
   @override
-  State<TripViewScreen> createState() => _TripViewScreenState();
+  ConsumerState<TripViewScreen> createState() => _TripViewScreenState();
 }
 
-class _TripViewScreenState extends State<TripViewScreen> {
-  int _selectedDay = 2; // default today
+class _TripViewScreenState extends ConsumerState<TripViewScreen> {
+  // Index into the _days list derived from API data.
+  int _selectedIndex = 0;
 
-  List<_TimelineEntry> get _currentEntries =>
-      _dayTimelines[_selectedDay] ?? [];
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
-  List<SpontaneousPreviewItem> get _spontaneousItems =>
-      _spontaneousByDay[_selectedDay] ?? [];
+  List<DayItem> _buildDayItems(
+      List<ItineraryItemEntity> items, DateTime? startDate) {
+    final days = items.map((e) => e.day).toSet().toList()..sort();
+    if (days.isEmpty) {
+      return [
+        const DayItem(label: 'D0', dayNumber: 0, date: 'Day 0'),
+      ];
+    }
+    final today = DateTime.now();
+    return days.map((d) {
+      final date = startDate?.add(Duration(days: d - 1));
+      final isToday = date != null &&
+          date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day;
+      final label = 'D$d';
+      final dateStr =
+          date != null ? '${_monthName(date.month)} ${date.day}' : 'Day $d';
+      return DayItem(
+        label: label,
+        dayNumber: d,
+        date: dateStr,
+        isToday: isToday,
+      );
+    }).toList();
+  }
+
+  String _monthName(int m) => const [
+        '',
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ][m];
+
+  TimelineItemState _itemState(
+      ItineraryItemEntity item, DayItem day, bool isFirstUpcomingToday) {
+    if (!day.isToday) {
+      // Determine whether this day is in the past or future by checking its
+      // date string against today. We use the isToday flag as the pivot: any
+      // day without an absolute date falls back to upcoming.
+      //
+      // To find past vs future we need the actual date. Since DayItem.date is
+      // a display string, we re-derive the date from startDate via the day
+      // number stored on the item. Here we use a simple heuristic: if the
+      // DayItem was constructed with a real date and the day label implies it
+      // has already passed, mark checkedIn. We rely on the caller always
+      // passing days in order, so we compare dayNumber to today's trip day.
+      final todayOrdinal = DateTime.now();
+      // Reconstruct the item date from the display string is brittle, so
+      // instead we use the startDate from the provider in the build method
+      // (passed via closure). For a V1 simplification, if !isToday we check
+      // the date string for a past date by computing from the snapshot below.
+      // The cleanest approach: accept a DateTime? per DayItem. Since DayItem
+      // only has a String date, we use a different approach — read the
+      // startDate from the provider here via ref.
+      final detail = ref
+          .read(tripDetailProvider(widget.tripId))
+          .valueOrNull;
+      final startDate = detail?.trip.startDate;
+      if (startDate != null) {
+        final dayDate = startDate.add(Duration(days: item.day - 1));
+        final dayDateNorm =
+            DateTime(dayDate.year, dayDate.month, dayDate.day);
+        final todayNorm = DateTime(
+            todayOrdinal.year, todayOrdinal.month, todayOrdinal.day);
+        if (dayDateNorm.isBefore(todayNorm)) {
+          return TimelineItemState.checkedIn;
+        }
+      }
+      return TimelineItemState.upcoming;
+    }
+
+    // Today: compare item start time to now.
+    final now = TimeOfDay.now();
+    if (item.startTime != null) {
+      final parts = item.startTime!.split(':');
+      final itemHour = int.tryParse(parts[0]) ?? 0;
+      final itemMin =
+          int.tryParse(parts.length > 1 ? parts[1] : '0') ?? 0;
+      if (itemHour < now.hour ||
+          (itemHour == now.hour && itemMin <= now.minute)) {
+        return TimelineItemState.checkedIn;
+      }
+    }
+    // First upcoming item on today becomes "current".
+    if (isFirstUpcomingToday) return TimelineItemState.current;
+    return TimelineItemState.upcoming;
+  }
+
+  // Assign states to all items for a given day, promoting the first upcoming
+  // item on today to `current`.
+  List<TimelineItemState> _assignStates(
+      List<ItineraryItemEntity> items, DayItem day) {
+    // First pass: determine raw states without current promotion.
+    final raw = items
+        .map((item) => _itemState(item, day, false))
+        .toList();
+
+    if (!day.isToday) return raw;
+
+    // Second pass: promote first non-checkedIn item to current.
+    bool promoted = false;
+    return raw.map((s) {
+      if (!promoted && s != TimelineItemState.checkedIn) {
+        promoted = true;
+        return TimelineItemState.current;
+      }
+      return s;
+    }).toList();
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, _) => [
-          _TripSliverAppBar(),
-        ],
-        body: Column(
-          children: [
-            DaySelectorStrip(
-              days: _mockDays,
-              selectedIndex: _selectedDay,
-              onDaySelected: (i) => setState(() => _selectedDay = i),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: _currentEntries.isEmpty
-                  ? const _EmptyDayState()
-                  : ListView(
-                      padding: const EdgeInsets.fromLTRB(
-                          0, AppSpacing.md, 0, 100),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md),
-                          child: Column(
-                            children: [
-                              for (int i = 0;
-                                  i < _currentEntries.length;
-                                  i++)
-                                TimelineItem(
-                                  state: _currentEntries[i].state,
-                                  time: _currentEntries[i].time,
-                                  name: _currentEntries[i].name,
-                                  location: _currentEntries[i].location,
-                                  photoCount:
-                                      _currentEntries[i].photoCount,
-                                  quote: _currentEntries[i].quote,
-                                  isLast: i == _currentEntries.length - 1,
-                                  onTap: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const CheckInScreen()),
-                                  ),
-                                  onCheckIn: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            const CheckInScreen()),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        // Spontaneous bucket
-                        SpontaneousBucket(
-                          itemCount: _spontaneousItems.length,
-                          previewItems: _spontaneousItems,
-                          onAdd: () => showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (_) => const SpontaneousAddSheet(),
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
-          ],
+    final itemsAsync = ref.watch(itineraryItemsProvider(widget.tripId));
+    final detailAsync = ref.watch(tripDetailProvider(widget.tripId));
+
+    return itemsAsync.when(
+      loading: () => const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, _) => Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Text(
+            'Failed to load itinerary:\n$err',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodySmall,
+          ),
         ),
       ),
+      data: (items) {
+        final startDate = detailAsync.valueOrNull?.trip.startDate;
+        final days = _buildDayItems(items, startDate);
+
+        // Clamp selected index in case data changed.
+        final safeIndex =
+            _selectedIndex.clamp(0, days.length - 1).toInt();
+
+        final selectedDay = days[safeIndex];
+        final selectedDayNumber = selectedDay.dayNumber;
+
+        final dayItems = items
+            .where((e) => e.day == selectedDayNumber)
+            .toList()
+          ..sort((a, b) {
+            final aTime = a.startTime ?? '';
+            final bTime = b.startTime ?? '';
+            return aTime.compareTo(bTime);
+          });
+
+        final states = _assignStates(dayItems, selectedDay);
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: NestedScrollView(
+            headerSliverBuilder: (context, _) => [
+              _TripSliverAppBar(
+                tripTitle: widget.tripTitle ?? 'Loading...',
+              ),
+            ],
+            body: Column(
+              children: [
+                DaySelectorStrip(
+                  days: days,
+                  selectedIndex: safeIndex,
+                  onDaySelected: (i) => setState(() => _selectedIndex = i),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: dayItems.isEmpty
+                      ? const _EmptyDayState()
+                      : ListView(
+                          padding: const EdgeInsets.fromLTRB(
+                              0, AppSpacing.md, 0, 100),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md),
+                              child: Column(
+                                children: [
+                                  for (int i = 0;
+                                      i < dayItems.length;
+                                      i++)
+                                    Builder(builder: (_) {
+                                      final entry = dayItems[i];
+                                      return TimelineItem(
+                                        state: states[i],
+                                        time: entry.startTime ?? '--:--',
+                                        name: entry.title,
+                                        location: entry.locationName,
+                                        photoCount: 0,
+                                        quote: entry.description,
+                                        isLast: i == dayItems.length - 1,
+                                        onTap: () =>
+                                            Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => CheckInScreen(
+                                              tripId: widget.tripId,
+                                              itemId: entry.id,
+                                              kind: 'planned',
+                                            ),
+                                          ),
+                                        ),
+                                        onCheckIn: () =>
+                                            Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => CheckInScreen(
+                                              tripId: widget.tripId,
+                                              itemId: entry.id,
+                                              kind: 'planned',
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                ],
+                              ),
+                            ),
+                            // Spontaneous bucket — real data wired in follow-up.
+                            SpontaneousBucket(
+                              itemCount: 0,
+                              previewItems: const [],
+                              onAdd: () => showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => const SpontaneousAddSheet(),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Sliver app bar
+// ─────────────────────────────────────────────────────────────────────────────
+
 class _TripSliverAppBar extends StatelessWidget {
+  const _TripSliverAppBar({required this.tripTitle});
+
+  final String tripTitle;
+
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
@@ -261,7 +312,7 @@ class _TripSliverAppBar extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.primary.withOpacity(0.8),
+                AppColors.primary.withValues(alpha: 0.8),
                 AppColors.primaryDark,
               ],
             ),
@@ -276,24 +327,17 @@ class _TripSliverAppBar extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'Bali with the crew',
+                      tripTitle,
                       style: AppTextStyles.headlineLarge.copyWith(
                         color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'May 19–23, 2026  ·  Bali, Indonesia',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: Colors.white.withOpacity(0.8),
                       ),
                     ),
                   ],
                 ),
               ),
-              // Collaborator avatars
-              CollaboratorAvatars(
-                avatarUrls: const ['A', 'B', 'C', 'D'],
+              // Collaborator avatars — real member list wired via follow-up.
+              const CollaboratorAvatars(
+                avatarUrls: [],
                 size: 32,
                 borderColor: Colors.white,
               ),
@@ -306,9 +350,9 @@ class _TripSliverAppBar extends StatelessWidget {
                   height: 32,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.5)),
+                        color: Colors.white.withValues(alpha: 0.5)),
                   ),
                   child: const Icon(
                     Icons.person_add_outlined,
@@ -330,6 +374,10 @@ class _TripSliverAppBar extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Empty state
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _EmptyDayState extends StatelessWidget {
   const _EmptyDayState();

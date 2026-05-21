@@ -22,6 +22,7 @@ type Checkin struct {
 	Lat             *float64
 	Lng             *float64
 	Kind            string
+	Vibe            *string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }

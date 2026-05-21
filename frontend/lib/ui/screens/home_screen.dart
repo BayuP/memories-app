@@ -1,118 +1,113 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
-import '../widgets/trip_card.dart';
+import 'package:memories_app/features/trips/domain/entities/trip_entity.dart'
+    as domain;
+import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
 import '../widgets/status_badge.dart';
+import '../widgets/trip_card.dart';
 import 'create_trip_screen.dart';
 import 'trip_view_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mock data
+// Mapping helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MockTrip {
-  const _MockTrip({
-    required this.id,
-    required this.name,
-    required this.destination,
-    required this.status,
-    required this.statusLabel,
-    required this.collaborators,
-    required this.checkInCount,
-    required this.coverColor,
-  });
-
-  final String id;
-  final String name;
-  final String destination;
-  final TripStatus status;
-  final String statusLabel;
-  final List<String> collaborators;
-  final int checkInCount;
-  final Color coverColor;
+TripStatus _uiStatus(domain.TripEntity t) {
+  final now = DateTime.now();
+  if (t.startDate != null && t.endDate != null) {
+    if (now.isBefore(t.startDate!)) return TripStatus.upcoming;
+    if (now.isAfter(t.endDate!)) return TripStatus.past;
+    return TripStatus.ongoing;
+  }
+  return t.status == domain.TripStatus.published
+      ? TripStatus.past
+      : TripStatus.ongoing;
 }
 
-const _mockTrips = [
-  _MockTrip(
-    id: '1',
-    name: 'Bali with the crew',
-    destination: 'Bali, Indonesia',
-    status: TripStatus.ongoing,
-    statusLabel: 'Ongoing',
-    collaborators: ['A', 'B', 'C', 'D'],
-    checkInCount: 12,
-    coverColor: Color(0xFFC97D4E),
-  ),
-  _MockTrip(
-    id: '2',
-    name: 'Japan cherry blossom',
-    destination: 'Tokyo & Kyoto, Japan',
-    status: TripStatus.upcoming,
-    statusLabel: 'In 14 days',
-    collaborators: ['E', 'F'],
-    checkInCount: 0,
-    coverColor: Color(0xFF7B9EC9),
-  ),
-  _MockTrip(
-    id: '3',
-    name: 'Yogyakarta temple run',
-    destination: 'Yogyakarta, Indonesia',
-    status: TripStatus.past,
-    statusLabel: 'Last month',
-    collaborators: ['G', 'H', 'I'],
-    checkInCount: 28,
-    coverColor: Color(0xFF4A9B7F),
-  ),
-  _MockTrip(
-    id: '4',
-    name: 'Singapore food trip',
-    destination: 'Singapore',
-    status: TripStatus.past,
-    statusLabel: '3 months ago',
-    collaborators: ['J', 'K'],
-    checkInCount: 19,
-    coverColor: Color(0xFFB97DBB),
-  ),
-];
+String _statusLabel(domain.TripEntity t) {
+  final s = _uiStatus(t);
+  final now = DateTime.now();
+  if (s == TripStatus.upcoming && t.startDate != null) {
+    final days = t.startDate!.difference(now).inDays;
+    return 'In $days days';
+  }
+  if (s == TripStatus.past && t.endDate != null) {
+    final days = now.difference(t.endDate!).inDays;
+    if (days < 30) return '$days days ago';
+    if (days < 365) return '${(days / 30).round()} months ago';
+    return '${(days / 365).round()} years ago';
+  }
+  return 'Ongoing';
+}
+
+Color _coverColor(String id) {
+  const colors = [
+    Color(0xFFC97D4E),
+    Color(0xFF7B9EC9),
+    Color(0xFF4A9B7F),
+    Color(0xFFB97DBB),
+    Color(0xFFB8893D),
+    Color(0xFF7A8FA6),
+  ];
+  return colors[id.hashCode.abs() % colors.length];
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Screen
 // ─────────────────────────────────────────────────────────────────────────────
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _navIndex = 0;
   String _filter = 'All';
 
   static const _filters = ['All', 'Upcoming', 'Past'];
 
-  List<_MockTrip> get _filtered {
+  List<domain.TripEntity> _filtered(List<domain.TripEntity> all) {
     return switch (_filter) {
-      'Upcoming' =>
-        _mockTrips.where((t) => t.status == TripStatus.upcoming).toList(),
-      'Past' =>
-        _mockTrips.where((t) => t.status == TripStatus.past).toList(),
-      _ => _mockTrips,
+      'Upcoming' => all.where((t) => _uiStatus(t) == TripStatus.upcoming).toList(),
+      'Past' => all.where((t) => _uiStatus(t) == TripStatus.past).toList(),
+      _ => all,
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    final tripsAsync = ref.watch(tripsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: IndexedStack(
         index: _navIndex,
         children: [
-          _TripsTab(
-            filter: _filter,
-            trips: _filtered,
-            filters: _filters,
-            onFilterChanged: (f) => setState(() => _filter = f),
+          tripsAsync.when(
+            loading: () => _TripsTab(
+              filter: _filter,
+              trips: const [],
+              filters: _filters,
+              onFilterChanged: (f) => setState(() => _filter = f),
+              isLoading: true,
+            ),
+            error: (e, _) => _TripsTab(
+              filter: _filter,
+              trips: const [],
+              filters: _filters,
+              onFilterChanged: (f) => setState(() => _filter = f),
+              error: e.toString(),
+            ),
+            data: (all) => _TripsTab(
+              filter: _filter,
+              trips: _filtered(all),
+              filters: _filters,
+              onFilterChanged: (f) => setState(() => _filter = f),
+            ),
           ),
           // Explore — V2 placeholder
           const _PlaceholderTab(
@@ -149,18 +144,22 @@ class _TripsTab extends StatelessWidget {
     required this.trips,
     required this.filters,
     required this.onFilterChanged,
+    this.isLoading = false,
+    this.error,
   });
 
   final String filter;
-  final List<_MockTrip> trips;
+  final List<domain.TripEntity> trips;
   final List<String> filters;
   final ValueChanged<String> onFilterChanged;
+  final bool isLoading;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        SliverAppBar(
+        const SliverAppBar(
           backgroundColor: AppColors.background,
           floating: true,
           pinned: false,
@@ -190,7 +189,27 @@ class _TripsTab extends StatelessWidget {
             ),
           ),
         ),
-        if (trips.isEmpty)
+        if (isLoading)
+          const SliverFillRemaining(
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (error != null)
+          SliverFillRemaining(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Text(
+                  'Failed to load trips.\n$error',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+              ),
+            ),
+          )
+        else if (trips.isEmpty)
           const SliverFillRemaining(
             child: Center(
               child: _EmptyState(),
@@ -205,19 +224,21 @@ class _TripsTab extends StatelessWidget {
                 (context, index) {
                   final trip = trips[index];
                   return Padding(
-                    padding:
-                        const EdgeInsets.only(bottom: AppSpacing.md),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
                     child: TripCard(
-                      tripName: trip.name,
+                      tripName: trip.title,
                       destination: trip.destination,
-                      status: trip.status,
-                      statusLabel: trip.statusLabel,
-                      collaboratorUrls: trip.collaborators,
-                      checkInCount: trip.checkInCount,
-                      coverColor: trip.coverColor,
+                      status: _uiStatus(trip),
+                      statusLabel: _statusLabel(trip),
+                      collaboratorUrls: const [],
+                      checkInCount: 0,
+                      coverColor: _coverColor(trip.id),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
-                            builder: (_) => const TripViewScreen()),
+                            builder: (_) => TripViewScreen(
+                                  tripId: trip.id,
+                                  tripTitle: trip.title,
+                                )),
                       ),
                     ),
                   );
@@ -253,7 +274,7 @@ class _HomeHeader extends StatelessWidget {
         Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.primary,
           ),
@@ -322,7 +343,7 @@ class _EmptyState extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
+        const Icon(
           Icons.luggage_outlined,
           size: 56,
           color: AppColors.textDisabled,
@@ -355,9 +376,9 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
-        border: const Border(
+        border: Border(
           top: BorderSide(color: AppColors.divider),
         ),
       ),
@@ -426,7 +447,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = disabled
-        ? AppColors.textDisabled.withOpacity(0.4)
+        ? AppColors.textDisabled.withValues(alpha: 0.4)
         : selected
             ? AppColors.primary
             : AppColors.textDisabled;
@@ -620,24 +641,24 @@ class _ProfileTab extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _StatCell(value: '4', label: 'Trips'),
+                    const _StatCell(value: '4', label: 'Trips'),
                     _VertDivider(),
-                    _StatCell(value: '59', label: 'Check-ins'),
+                    const _StatCell(value: '59', label: 'Check-ins'),
                     _VertDivider(),
-                    _StatCell(value: '2', label: 'Published'),
+                    const _StatCell(value: '2', label: 'Published'),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 const Divider(height: 1),
-                _SettingsTile(
+                const _SettingsTile(
                   icon: Icons.settings_outlined,
                   label: 'Settings',
                 ),
-                _SettingsTile(
+                const _SettingsTile(
                   icon: Icons.help_outline_rounded,
                   label: 'Help & feedback',
                 ),
-                _SettingsTile(
+                const _SettingsTile(
                   icon: Icons.logout_rounded,
                   label: 'Sign out',
                   destructive: true,

@@ -24,6 +24,13 @@ type UpsertLogisticsRequest struct {
 	Notes    *string  `json:"notes"`
 }
 
+// UpdateCheckinRequest is the PATCH /checkins/:id body.
+// All fields are optional; only provided fields are updated.
+type UpdateCheckinRequest struct {
+	Vibe       *string `json:"vibe"`
+	CapturedAt *string `json:"captured_at"`
+}
+
 // UpsertRecommendationRequest is the PUT /checkins/:id/recommendation body.
 type UpsertRecommendationRequest struct {
 	Title  string   `json:"title"`
@@ -42,6 +49,7 @@ type CheckinResponse struct {
 	Lat             *float64            `json:"lat"`
 	Lng             *float64            `json:"lng"`
 	Kind            string              `json:"kind"`
+	Vibe            *string             `json:"vibe"`
 	Memory          *MemoryResponse     `json:"memory"`
 	Logistics       *LogisticsResponse  `json:"logistics"`
 	Recommendation  *RecommendResponse  `json:"recommendation"`
@@ -96,6 +104,7 @@ func toCheckinResponse(c *Checkin, mem *Memory, log *Logistics, rec *Recommendat
 		Lat:        c.Lat,
 		Lng:        c.Lng,
 		Kind:       c.Kind,
+		Vibe:       c.Vibe,
 		Media:      []MediaItemResponse{},
 		CreatedAt:  c.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}

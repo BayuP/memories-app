@@ -132,7 +132,14 @@ List<_ItineraryDay> _buildMockDays() => [
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AiItineraryReviewScreen extends StatefulWidget {
-  const AiItineraryReviewScreen({super.key});
+  const AiItineraryReviewScreen({
+    super.key,
+    required this.tripId,
+    this.tripTitle,
+  });
+
+  final String tripId;
+  final String? tripTitle;
 
   @override
   State<AiItineraryReviewScreen> createState() =>
@@ -206,7 +213,11 @@ class _AiItineraryReviewScreenState extends State<AiItineraryReviewScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const TripViewScreen()),
+              MaterialPageRoute(
+                    builder: (_) => TripViewScreen(
+                      tripId: widget.tripId,
+                      tripTitle: widget.tripTitle,
+                    )),
             ),
             child: Text(
               'Looks good',

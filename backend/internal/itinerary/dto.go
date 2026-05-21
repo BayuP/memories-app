@@ -41,6 +41,17 @@ type ItemResponse struct {
 	UpdatedAt    string   `json:"updated_at"`
 }
 
+// ReorderItem carries a single item's new sort order.
+type ReorderItem struct {
+	ID        string `json:"id"`
+	SortOrder int    `json:"sort_order"`
+}
+
+// ReorderRequest is the PATCH /trips/:id/items/reorder body.
+type ReorderRequest struct {
+	Items []ReorderItem `json:"items"`
+}
+
 // AIItemInput is used by the AI generator to bulk-insert items.
 type AIItemInput struct {
 	Day          int      `json:"day"`
