@@ -28,9 +28,11 @@
 - Explore feed (GET /public/trips) — V2 scope, deferred
 - Postgres RLS on checkin_logistics — V2 defence-in-depth, deferred
 
-## Phase 5 — UI Design System Alignment ✅ DONE (May 2026)
+## Phase 5 — UI Design System Alignment ✅ DONE (commit 76b19ab, May 2026)
 - HTML prototype built (10 screens): warm cream #F5F3EF, Playfair Display italic headings, near-black #1A1815 CTAs
 - Flutter theme rebuilt: single source at core/theme/app_theme.dart — teal/coral removed, warm cream palette locked
+- AppTheme extended: coral (#B5715A), coralLight, amber (#B8893D), amberLight, accentGreenDark color tokens added
+- All feature pages migrated: auth, checkin, profile, create_trip, home, itinerary_review, public_trip, trip_timeline + trip_card widget
 - 10 Flutter screens + 9 widgets (lib/ui/screens/, lib/ui/widgets/) updated to new theme imports
 - Conflicting ui/theme/app_theme.dart deleted
 - Design direction approved: warm cream (not pure B&W, not terracotta)
@@ -44,6 +46,8 @@ Flutter app scaffolded with full clean architecture (data/domain/presentation pe
 - Platform-conditional token storage: flutter_secure_storage (native) / shared_preferences (web)
 - Android platform added via `flutter create --platforms=android .` — `android/` dir committed
 - Web platform enabled (Chrome). macOS scaffolded (requires full Xcode.app — not CLI tools).
+- iOS platform added (commit 5d3be1d): Runner, xcodeproj, xcworkspace, Flutter xcconfig, RunnerTests committed
+- macOS CocoaPods: Podfile + Podfile.lock committed for reproducible dependency resolution
 - Dockerfile fixed: golang:1.23 → golang:1.25 (go.mod requires go 1.25)
 - Router fixed: root `/` now always redirects (to auth or home) instead of hanging on splash
 - Handle `@` prefix stripped on signup; frontend validator matches backend regex `^[a-z0-9_]{3,30}$`
