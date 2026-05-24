@@ -28,6 +28,44 @@
 - Explore feed (GET /public/trips) — V2 scope, deferred
 - Postgres RLS on checkin_logistics — V2 defence-in-depth, deferred
 
+## Phase 6 — Trip Timeline, Check-in & Home Feed Polish ✅ DONE (commit 0be5d2b, May 2026)
+
+### Backend
+- `GET /trips/{tripID}/checkins` — list all check-ins per trip (N+1 with memory, acceptable scale)
+- User search excludes caller: fixed `_ = userID` bug in handler; `SearchByHandle` now takes `excludeID uuid.UUID`; SQL `AND id != $2`
+- Itinerary items: `category` column added (migration 0002)
+
+### Frontend
+**Trip Day Timeline (`trip_timeline_page.dart`)**
+- Full redesign: semantic card states — done (green), now (amber), upcoming (blue), spontaneous (green dashed)
+- Edit/delete/insert activity: pencil + trash icons on cards, `_ActivitySheet` bottom sheet, `_confirmDeleteItem` dialog
+- "Add activity here" dashed rows interleaved between items (`itemCount = items.length * 2 + 2`)
+- Spontaneous moments: DB-backed via `tripCheckinsProvider`, collapsible `_SpontaneousGroup` (AnimatedSize + AnimatedRotation)
+- Check-in button: `context.push<bool>` → `context.pop(true)` → invalidates `tripCheckinsProvider`
+- Back button: `canPop()` guard → falls back to `context.go('/')` on root route
+- Time display: `_fmtTime()` strips microseconds → `HH:mm`
+
+**Check-in Page (`checkin_page.dart`)**
+- View mode: `_loadExisting()` in `initState` populates all fields from `repo.getCheckin()`
+- Button label: `isSpont ? 'save moment' : 'check in'`; spinner while saving
+- `CheckinMemoryModel.fromJson`: fixed `shared_with` cast (`List<dynamic>` → join to String)
+
+**Home & Journeys (`home_page.dart`)**
+- New Journey button pinned to bottom (outside ListView)
+- Home tab (0): greeting header + featured own trip + shared preview
+- Journeys tab (1): all trips grouped — ongoing (green dot) / upcoming (amber dot) / past (gray dot)
+- Trips split by `ownerId == currentUserId`: "Your journeys" vs "Shared with you" (blue badge)
+
+**Create Trip (`create_trip_page.dart`)**
+- Trip created on step 0 "looks good — let's go" button (spinner while creating)
+- Step 1 becomes invite + AI/manual choice (trip already exists)
+- `_createTripNow()` → `_buildItinerary(useAi)` separation
+
+**Auth / Account Switch**
+- `currentUserIdProvider`: `FutureProvider<String?>` calling `GET /me`
+- Sign-out and sign-in both `ref.invalidate(tripsProvider, profileProvider, currentUserIdProvider)`
+- Invite search: frontend filter `u.id != currentUserId` (+ backend exclusion above)
+
 ## Phase 5 — UI Design System Alignment ✅ DONE (commit 76b19ab, May 2026)
 - HTML prototype built (10 screens): warm cream #F5F3EF, Playfair Display italic headings, near-black #1A1815 CTAs
 - Flutter theme rebuilt: single source at core/theme/app_theme.dart — teal/coral removed, warm cream palette locked
