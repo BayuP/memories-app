@@ -66,6 +66,15 @@ class TripsRepositoryImpl implements TripsRepository {
   }
 
   @override
+  Future<ItineraryItemEntity> createItem(
+    String tripId,
+    Map<String, dynamic> body,
+  ) async {
+    final model = await _dataSource.createItem(tripId, body);
+    return model.toEntity();
+  }
+
+  @override
   Future<List<ItineraryItemEntity>> getItems(String tripId) async {
     final models = await _dataSource.getItems(tripId);
     return models.map((m) => m.toEntity()).toList();

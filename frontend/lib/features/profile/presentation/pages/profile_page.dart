@@ -182,6 +182,9 @@ class _ProfileContent extends ConsumerWidget {
               const SizedBox(width: 4),
               TextButton(
                 onPressed: () async {
+                  ref.invalidate(tripsProvider);
+                  ref.invalidate(currentUserIdProvider);
+                  ref.invalidate(profileProvider);
                   await ref.read(authProvider.notifier).signOut();
                 },
                 child: Text(

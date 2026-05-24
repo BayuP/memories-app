@@ -3,6 +3,7 @@ enum TripStatus { active, published }
 class TripEntity {
   const TripEntity({
     required this.id,
+    required this.ownerId,
     required this.title,
     required this.destination,
     this.startDate,
@@ -13,6 +14,7 @@ class TripEntity {
   });
 
   final String id;
+  final String ownerId;
   final String title;
   final String destination;
   final DateTime? startDate;
@@ -58,6 +60,7 @@ class ItineraryItemEntity {
     this.locationName,
     this.lat,
     this.lng,
+    this.category,
     required this.source,
   });
 
@@ -71,6 +74,7 @@ class ItineraryItemEntity {
   final String? locationName;
   final double? lat;
   final double? lng;
+  final String? category;
   final String source;
 }
 

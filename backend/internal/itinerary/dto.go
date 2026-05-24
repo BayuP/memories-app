@@ -10,6 +10,7 @@ type CreateItemRequest struct {
 	LocationName *string `json:"location_name"`
 	Lat          *float64 `json:"lat"`
 	Lng          *float64 `json:"lng"`
+	Category     *string  `json:"category"`
 }
 
 // UpdateItemRequest is the PATCH /trips/:id/items/:itemId body.
@@ -22,6 +23,7 @@ type UpdateItemRequest struct {
 	LocationName *string  `json:"location_name"`
 	Lat          *float64 `json:"lat"`
 	Lng          *float64 `json:"lng"`
+	Category     *string  `json:"category"`
 }
 
 // ItemResponse is the public item representation.
@@ -36,6 +38,7 @@ type ItemResponse struct {
 	LocationName *string  `json:"location_name"`
 	Lat          *float64 `json:"lat"`
 	Lng          *float64 `json:"lng"`
+	Category     *string  `json:"category"`
 	Source       string   `json:"source"`
 	CreatedAt    string   `json:"created_at"`
 	UpdatedAt    string   `json:"updated_at"`
@@ -75,6 +78,7 @@ func toItemResponse(item *Item) ItemResponse {
 		LocationName: item.LocationName,
 		Lat:          item.Lat,
 		Lng:          item.Lng,
+		Category:     item.Category,
 		Source:       item.Source,
 		CreatedAt:    item.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:    item.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),

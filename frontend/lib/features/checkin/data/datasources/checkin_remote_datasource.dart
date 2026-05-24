@@ -273,4 +273,16 @@ class CheckinRemoteDataSource {
     // DEMO: real API call below
     await _apiClient.delete('/api/v1/media/$mediaId');
   }
+
+  Future<List<CheckinModel>> listCheckins(String tripId) async {
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      return [];
+    }
+    final data = await _apiClient.get('/api/v1/trips/$tripId/checkins');
+    final list = data as List<dynamic>;
+    return list
+        .map((e) => CheckinModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

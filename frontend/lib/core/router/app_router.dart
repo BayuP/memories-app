@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:memories_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:memories_app/features/checkin/presentation/pages/checkin_page.dart';
@@ -98,9 +98,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           final tripId = state.pathParameters['id']!;
           final extra = state.extra as Map<String, dynamic>?;
           final items = extra?['items'] as List<ItineraryItemEntity>? ?? [];
+          final aiEnabled = extra?['aiEnabled'] as bool? ?? true;
           return ItineraryReviewPage(
             tripId: tripId,
             initialItems: items,
+            aiEnabled: aiEnabled,
           );
         },
       ),

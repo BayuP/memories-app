@@ -27,12 +27,37 @@ func NewHandler(svc *Service, log *slog.Logger) *Handler {
 func (h *Handler) Routes() func(chi.Router) {
 	return func(r chi.Router) {
 		r.Post("/trips/{tripID}/checkins", h.create)
+		r.Get("/trips/{tripID}/checkins", h.list)
 		r.Get("/checkins/{checkinID}", h.get)
 		r.Patch("/checkins/{checkinID}", h.update)
 		r.Put("/checkins/{checkinID}/memory", h.upsertMemory)
 		r.Put("/checkins/{checkinID}/logistics", h.upsertLogistics)
 		r.Put("/checkins/{checkinID}/recommendation", h.upsertRecommendation)
 	}
+}
+
+func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := httpx.UserIDFromContext(r.Context())
+	if !ok {
+		httpx.ErrUnauthorized(w)
+		return
+	}
+	tripID, err := uuid.Parse(chi.URLParam(r, "tripID"))
+	if err != nil {
+		httpx.ErrNotFound(w, "trip")
+		return
+	}
+	checkins, err := h.svc.ListCheckins(r.Context(), tripID, callerID)
+	if err != nil {
+		if errors.Is(err, ErrForbidden) {
+			httpx.ErrForbidden(w)
+			return
+		}
+		h.log.ErrorContext(r.Context(), "list checkins", "error", err)
+		httpx.ErrInternal(w)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, checkins)
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {

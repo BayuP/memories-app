@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:memories_app/core/router/app_router.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
 import 'package:memories_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:memories_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
@@ -71,6 +73,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       },
       data: (state) {
         if (state.status == AuthStatus.authenticated) {
+          ref.invalidate(tripsProvider);
+          ref.invalidate(currentUserIdProvider);
+          ref.invalidate(profileProvider);
           context.go(AppRoutes.home);
         }
       },

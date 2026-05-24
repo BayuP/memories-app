@@ -25,6 +25,7 @@ type CreateItemParams struct {
 	LocationName *string
 	Lat          *float64
 	Lng          *float64
+	Category     *string
 	Source       string
 }
 
@@ -38,6 +39,7 @@ type UpdateItemParams struct {
 	LocationName *string
 	Lat          *float64
 	Lng          *float64
+	Category     *string
 }
 
 // Repository defines the data access contract for itinerary items.
@@ -60,14 +62,14 @@ func NewRepository(db *pgxpool.Pool) Repository {
 	return &postgresRepository{db: db}
 }
 
-const itemColumns = `id, trip_id, day, start_time, end_time, title, description, location_name, lat, lng, source, created_at, updated_at`
+const itemColumns = `id, trip_id, day, start_time, end_time, title, description, location_name, lat, lng, category, source, created_at, updated_at`
 
 func (r *postgresRepository) CreateItem(ctx context.Context, p CreateItemParams) (*Item, error) {
 	row := r.db.QueryRow(ctx,
-		`INSERT INTO itinerary_items (trip_id, day, start_time, end_time, title, description, location_name, lat, lng, source)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`INSERT INTO itinerary_items (trip_id, day, start_time, end_time, title, description, location_name, lat, lng, category, source)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		 RETURNING `+itemColumns,
-		p.TripID, p.Day, p.StartTime, p.EndTime, p.Title, p.Description, p.LocationName, p.Lat, p.Lng, p.Source,
+		p.TripID, p.Day, p.StartTime, p.EndTime, p.Title, p.Description, p.LocationName, p.Lat, p.Lng, p.Category, p.Source,
 	)
 	return scanItem(row)
 }
@@ -108,10 +110,10 @@ func (r *postgresRepository) UpdateItem(ctx context.Context, id uuid.UUID, p Upd
 	row := r.db.QueryRow(ctx,
 		`UPDATE itinerary_items
 		 SET day = $2, start_time = $3, end_time = $4, title = $5, description = $6,
-		     location_name = $7, lat = $8, lng = $9, updated_at = now()
+		     location_name = $7, lat = $8, lng = $9, category = $10, updated_at = now()
 		 WHERE id = $1
 		 RETURNING `+itemColumns,
-		id, p.Day, p.StartTime, p.EndTime, p.Title, p.Description, p.LocationName, p.Lat, p.Lng,
+		id, p.Day, p.StartTime, p.EndTime, p.Title, p.Description, p.LocationName, p.Lat, p.Lng, p.Category,
 	)
 	item, err := scanItem(row)
 	if err != nil {
@@ -171,7 +173,7 @@ func scanItem(row rowScanner) (*Item, error) {
 	if err := row.Scan(
 		&item.ID, &item.TripID, &item.Day, &item.StartTime, &item.EndTime,
 		&item.Title, &item.Description, &item.LocationName, &item.Lat, &item.Lng,
-		&item.Source, &item.CreatedAt, &item.UpdatedAt,
+		&item.Category, &item.Source, &item.CreatedAt, &item.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}

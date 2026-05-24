@@ -24,6 +24,7 @@ type Item struct {
 	LocationName *string
 	Lat          *float64
 	Lng          *float64
+	Category     *string
 	Source       string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time

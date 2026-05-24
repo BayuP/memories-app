@@ -47,6 +47,7 @@ const mockMemberMaya = MemberEntity(
 // Trip 1 — Bali Adrenaline Trip (completed, May 8-15 2024)
 final mockTripBali = TripEntity(
   id: 'trip-001',
+  ownerId: 'user-001',
   title: 'Bali Adrenaline Trip 🌴',
   destination: 'Bali, Indonesia',
   startDate: DateTime(2024, 5, 8),
@@ -61,6 +62,7 @@ final _tokyoStart = DateTime.now().add(const Duration(days: 5));
 final _tokyoEnd = _tokyoStart.add(const Duration(days: 6));
 final mockTripTokyo = TripEntity(
   id: 'trip-002',
+  ownerId: 'user-001',
   title: 'Tokyo Ramen Run 🍜',
   destination: 'Tokyo, Japan',
   startDate: _tokyoStart,
@@ -75,6 +77,7 @@ final _bandungStart = DateTime.now().subtract(const Duration(days: 35));
 final _bandungEnd = _bandungStart.add(const Duration(days: 2));
 final mockTripBandung = TripEntity(
   id: 'trip-003',
+  ownerId: 'user-002',
   title: 'Bandung Weekend 🌋',
   destination: 'Bandung, Indonesia',
   startDate: _bandungStart,

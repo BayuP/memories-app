@@ -24,6 +24,7 @@ func ToProfileResponse(u *User) ProfileResponse {
 
 // PublicProfileResponse is the handle lookup response (no email).
 type PublicProfileResponse struct {
+	ID          string  `json:"id"`
 	Handle      string  `json:"handle"`
 	DisplayName string  `json:"display_name"`
 	AvatarURL   *string `json:"avatar_url"`
@@ -32,6 +33,7 @@ type PublicProfileResponse struct {
 // ToPublicProfileResponse creates a handle lookup response without PII.
 func ToPublicProfileResponse(u *User) PublicProfileResponse {
 	return PublicProfileResponse{
+		ID:          u.ID.String(),
 		Handle:      u.Handle,
 		DisplayName: u.DisplayName,
 		AvatarURL:   u.AvatarURL,

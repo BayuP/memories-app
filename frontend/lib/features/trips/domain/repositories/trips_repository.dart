@@ -26,6 +26,11 @@ abstract class TripsRepository {
     List<Map<String, String>> history,
   );
 
+  Future<ItineraryItemEntity> createItem(
+    String tripId,
+    Map<String, dynamic> body,
+  );
+
   Future<List<ItineraryItemEntity>> getItems(String tripId);
 
   Future<ItineraryItemEntity> updateItem(

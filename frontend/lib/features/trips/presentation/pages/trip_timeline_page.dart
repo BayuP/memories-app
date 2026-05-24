@@ -1,14 +1,33 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:memories_app/core/router/app_router.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
+import 'package:memories_app/features/checkin/domain/entities/checkin_entity.dart';
+import 'package:memories_app/features/checkin/presentation/providers/checkin_provider.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
 
 // ---------------------------------------------------------------------------
+// Semantic state colors (not in global palette — timeline-specific)
+// ---------------------------------------------------------------------------
+
+const _kAmberBg = Color(0xFFF5E9CF);
+const _kAmberText = Color(0xFF9A6C1A);
+const _kBlueBg = Color(0xFFE4EAF5);
+const _kBlueText = Color(0xFF5B7AAA);
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+String _fmtTime(String raw) {
+  final parts = raw.split(':');
+  if (parts.length < 2) return raw;
+  return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
+}
 
 String _weekdayName(int weekday) {
   const names = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -23,8 +42,6 @@ String _monthName(int month) {
   return names[(month - 1) % 12];
 }
 
-/// Returns the 1-based day number currently active relative to trip start.
-/// Day 1 = startDate. Returns null if trip hasn't started or no startDate.
 int? _currentTripDay(DateTime? startDate, DateTime? endDate) {
   if (startDate == null) return null;
   final now = DateTime.now();
@@ -38,13 +55,11 @@ int? _currentTripDay(DateTime? startDate, DateTime? endDate) {
   return today.difference(start).inDays + 1;
 }
 
-/// Returns the date for a given 1-based day number.
 DateTime? _dateForDay(DateTime? startDate, int day) {
   if (startDate == null) return null;
   return startDate.add(Duration(days: day - 1));
 }
 
-/// Number of days in the trip.
 int _tripDayCount(DateTime? startDate, DateTime? endDate) {
   if (startDate == null || endDate == null) return 1;
   final start = DateTime(startDate.year, startDate.month, startDate.day);
@@ -69,6 +84,7 @@ class TripTimelinePage extends ConsumerStatefulWidget {
 class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
   int _selectedDay = 1;
   int _navIndex = 0;
+  bool _spontaneousExpanded = false;
   final _daySelectorScrollController = ScrollController();
 
   @override
@@ -84,26 +100,16 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
 
     return tripDetailAsync.when(
       loading: () => _buildScaffold(
-        tripTitle: null,
-        members: const [],
-        startDate: null,
-        endDate: null,
         body: const Center(
           child: CircularProgressIndicator(
               color: AppColors.accentGreen, strokeWidth: 2),
         ),
       ),
       error: (e, _) => _buildScaffold(
-        tripTitle: null,
-        members: const [],
-        startDate: null,
-        endDate: null,
-        body: _buildErrorState(
-          onRetry: () {
-            ref.invalidate(tripDetailProvider(widget.tripId));
-            ref.invalidate(itineraryItemsProvider(widget.tripId));
-          },
-        ),
+        body: _buildErrorState(onRetry: () {
+          ref.invalidate(tripDetailProvider(widget.tripId));
+          ref.invalidate(itineraryItemsProvider(widget.tripId));
+        }),
       ),
       data: (detail) {
         final trip = detail.trip;
@@ -111,23 +117,25 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         final dayCount = _tripDayCount(trip.startDate, trip.endDate);
         final currentDay = _currentTripDay(trip.startDate, trip.endDate);
 
-        // Auto-select current day once on first build
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && currentDay != null && _selectedDay == 1) {
             setState(() => _selectedDay = currentDay);
           }
         });
 
+        final checkinsForSubheader =
+            ref.watch(tripCheckinsProvider(widget.tripId)).maybeWhen(
+                  data: (c) => c,
+                  orElse: () => <CheckinEntity>[],
+                );
+
         return _buildScaffold(
-          tripTitle: trip.title,
-          members: members,
-          startDate: trip.startDate,
-          endDate: trip.endDate,
-          customAppBar: _buildAppBar(context, trip, members.length),
+          appBar: _buildAppBar(context, trip),
           body: Column(
             children: [
-              _buildCollaboratorRow(members),
+              _buildSubheaderRow(members, itemsAsync, checkinsForSubheader),
               _buildDaySelector(dayCount, currentDay, trip.startDate),
+              const Divider(height: 1, thickness: 0.5),
               Expanded(
                 child: itemsAsync.when(
                   loading: () => const Center(
@@ -139,6 +147,12 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                         ref.invalidate(itineraryItemsProvider(widget.tripId)),
                   ),
                   data: (items) {
+                    final checkinsAsync =
+                        ref.watch(tripCheckinsProvider(widget.tripId));
+                    final checkins = checkinsAsync.maybeWhen(
+                      data: (c) => c,
+                      orElse: () => <CheckinEntity>[],
+                    );
                     final dayItems = items
                         .where((i) => i.day == _selectedDay)
                         .toList()
@@ -152,12 +166,9 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                       onRefresh: () async {
                         ref.invalidate(tripDetailProvider(widget.tripId));
                         ref.invalidate(itineraryItemsProvider(widget.tripId));
+                        ref.invalidate(tripCheckinsProvider(widget.tripId));
                       },
-                      child: _buildTimeline(
-                        dayItems,
-                        currentDay,
-                        trip,
-                      ),
+                      child: _buildTimeline(dayItems, currentDay, trip, checkins),
                     );
                   },
                 ),
@@ -170,36 +181,21 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Scaffold wrapper
+  // Scaffold
   // ---------------------------------------------------------------------------
 
-  Widget _buildScaffold({
-    required String? tripTitle,
-    required List<MemberEntity> members,
-    required DateTime? startDate,
-    required DateTime? endDate,
-    required Widget body,
-    PreferredSizeWidget? customAppBar,
-  }) {
+  Widget _buildScaffold({Widget? body, PreferredSizeWidget? appBar}) {
     return Scaffold(
       backgroundColor: AppColors.bg,
-      appBar: customAppBar ??
+      appBar: appBar ??
           AppBar(
+            backgroundColor: AppColors.bg,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back,
-                  color: AppColors.text, size: 20),
+              icon: const Icon(Icons.arrow_back, color: AppColors.text, size: 20),
               onPressed: () => context.pop(),
             ),
-            title: Text(
-              tripTitle ?? 'trip timeline',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.text,
-              ),
-            ),
           ),
-      body: body,
+      body: body ?? const SizedBox.shrink(),
       bottomNavigationBar: _buildBottomNav(context),
     );
   }
@@ -208,11 +204,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
   // AppBar
   // ---------------------------------------------------------------------------
 
-  PreferredSizeWidget _buildAppBar(
-    BuildContext context,
-    TripEntity trip,
-    int memberCount,
-  ) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, TripEntity trip) {
     final currentDay = _currentTripDay(trip.startDate, trip.endDate);
     final dayCount = _tripDayCount(trip.startDate, trip.endDate);
 
@@ -229,9 +221,18 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     }
 
     return AppBar(
+      backgroundColor: AppColors.bg,
+      elevation: 0,
+      scrolledUnderElevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: AppColors.text, size: 20),
-        onPressed: () => context.pop(),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/');
+          }
+        },
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,7 +241,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
           Text(
             trip.title,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppColors.text,
             ),
@@ -249,7 +250,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
             Text(
               subtitle,
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: FontWeight.w400,
                 color: AppColors.textMuted,
               ),
@@ -274,42 +275,91 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
   }
 
   // ---------------------------------------------------------------------------
-  // Collaborator row
+  // Subheader: avatars + progress
   // ---------------------------------------------------------------------------
 
-  Widget _buildCollaboratorRow(List<MemberEntity> members) {
-    if (members.isEmpty) return const SizedBox.shrink();
+  Widget _buildSubheaderRow(
+    List<MemberEntity> members,
+    AsyncValue<List<ItineraryItemEntity>> itemsAsync,
+    List<CheckinEntity> checkins,
+  ) {
+    final checkedInItemIds = checkins
+        .where((c) => c.itineraryItemId != null)
+        .map((c) => c.itineraryItemId!)
+        .toSet();
+    final doneCount = itemsAsync.maybeWhen(
+      data: (items) => items
+          .where((i) => i.day == _selectedDay && checkedInItemIds.contains(i.id))
+          .length,
+      orElse: () => 0,
+    );
+    final totalCount = itemsAsync.maybeWhen(
+      data: (items) => items.where((i) => i.day == _selectedDay).length,
+      orElse: () => 0,
+    );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Row(
         children: [
-          SizedBox(
-            height: 22,
-            width: members.length * 16.0 + 6,
-            child: Stack(
-              children: [
-                for (int i = 0; i < members.length && i < 5; i++)
-                  Positioned(
-                    left: i * 16.0,
-                    child: _AvatarCircle(
-                      initial: members[i].displayName.isNotEmpty
-                          ? members[i].displayName[0].toUpperCase()
-                          : '?',
-                      size: 22,
+          // Stacked avatars
+          if (members.isNotEmpty) ...[
+            SizedBox(
+              height: 22,
+              width: math.min(members.length, 5) * 15.0 + 7,
+              child: Stack(
+                children: [
+                  for (int i = 0; i < members.length && i < 5; i++)
+                    Positioned(
+                      left: i * 15.0,
+                      child: _AvatarCircle(
+                        initial: members[i].displayName.isNotEmpty
+                            ? members[i].displayName[0].toUpperCase()
+                            : '?',
+                        size: 22,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${members.length} ${members.length == 1 ? 'person' : 'people'} on this trip',
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textMuted,
+            const SizedBox(width: 8),
+            Text(
+              '${members.length} ${members.length == 1 ? 'person' : 'people'} on this trip',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textMuted,
+              ),
             ),
-          ),
+          ],
+          const Spacer(),
+          // Progress pill
+          if (totalCount > 0)
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: doneCount == totalCount
+                    ? AppColors.accentGreenLight
+                    : AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                border: Border.all(
+                  color: doneCount == totalCount
+                      ? AppColors.accentGreen
+                      : AppColors.border,
+                  width: 0.5,
+                ),
+              ),
+              child: Text(
+                '$doneCount of $totalCount done',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: doneCount == totalCount
+                      ? AppColors.accentGreenDark
+                      : AppColors.textMuted,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -325,11 +375,11 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     DateTime? startDate,
   ) {
     return SizedBox(
-      height: 38,
+      height: 40,
       child: ListView.separated(
         controller: _daySelectorScrollController,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         itemCount: dayCount,
         separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
@@ -339,14 +389,18 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
           final label = isToday ? 'd$index · today' : 'd$index';
           return GestureDetector(
             onTap: () => setState(() => _selectedDay = day),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.text : AppColors.surfaceVariant,
+                color: isSelected ? AppColors.text : AppColors.bg,
                 borderRadius: BorderRadius.circular(AppRadius.full),
-                border: isSelected
-                    ? null
-                    : Border.all(color: AppColors.border, width: 0.5),
+                border: Border.all(
+                  color:
+                      isSelected ? AppColors.text : AppColors.border,
+                  width: isSelected ? 1.0 : 0.5,
+                ),
               ),
               child: Text(
                 label,
@@ -371,99 +425,289 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     List<ItineraryItemEntity> items,
     int? currentDay,
     TripEntity trip,
+    List<CheckinEntity> checkins,
   ) {
+    final checkedInItemIds = checkins
+        .where((c) => c.itineraryItemId != null)
+        .map((c) => c.itineraryItemId!)
+        .toSet();
+
+    // Spontaneous checkins for the selected day
+    final selectedDate = _dateForDay(trip.startDate, _selectedDay);
+    final spontaneousForDay = checkins
+        .where((c) => c.kind == 'spontaneous' && c.itineraryItemId == null)
+        .where((c) {
+          if (selectedDate == null) return true; // no dates → show all
+          final cd = DateTime(c.capturedAt.year, c.capturedAt.month, c.capturedAt.day);
+          final sd = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+          return cd == sd;
+        })
+        .toList()
+      ..sort((a, b) => a.capturedAt.compareTo(b.capturedAt));
+
     final isOnTripDay = currentDay == _selectedDay;
 
-    // Determine which item is "now": first item without a check-in on today
-    // For V1, we treat the first item of the current day as "now"
-    // (no check-in data embedded in items yet, so we use index 0 for today)
-    int? nowIndex = isOnTripDay && items.isNotEmpty ? 0 : null;
+    int? nowIndex;
+    if (isOnTripDay) {
+      for (int i = 0; i < items.length; i++) {
+        if (!checkedInItemIds.contains(items[i].id)) {
+          nowIndex = i;
+          break;
+        }
+      }
+    }
 
-    final totalRows = items.length + 1; // +1 for spontaneous bucket
+    // Total rows: items * 2 (item + insert-after row) + "add activity" button + spontaneous group
+    // index mapping:
+    //   0..items.length*2-1 → item rows (even) and insert rows (odd)
+    //   items.length*2      → "add activity" button
+    //   items.length*2+1    → spontaneous group
+    final totalCount = items.length * 2 + 2;
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-      itemCount: totalRows,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      itemCount: totalCount,
       itemBuilder: (context, index) {
-        if (index < items.length) {
-          final item = items[index];
-          final isNow = nowIndex != null && index == nowIndex;
-          final isDone = false; // In V1 we have no check-in ids on items
-
-          return _TimelineRow(
-            isLast: false,
-            dot: _buildDot(isDone: isDone, isNow: isNow),
-            card: _buildItemCard(
-              item: item,
-              isDone: isDone,
-              isNow: isNow,
-              onCheckin: () => _openCheckinCreate(
-                tripId: trip.id,
-                itemId: item.id,
-                kind: 'planned',
-              ),
-            ),
-          );
-        } else {
-          // Spontaneous bucket
-          return _TimelineRow(
-            isLast: true,
-            dot: _buildSpontaneousDot(),
-            card: _buildSpontaneousCard(
-              onTap: () => _openCheckinCreate(
-                tripId: trip.id,
-                itemId: null,
-                kind: 'spontaneous',
+        // "add activity" button row
+        if (index == items.length * 2) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: GestureDetector(
+              onTap: () => _showActivitySheet(trip),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: AppColors.border, width: 0.5),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add, size: 14, color: AppColors.textMuted),
+                    SizedBox(width: 6),
+                    Text(
+                      'add activity',
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
         }
+
+        // Spontaneous group
+        if (index == items.length * 2 + 1) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 6),
+                      _buildSpontaneousDot(),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: _SpontaneousGroup(
+                    checkins: spontaneousForDay,
+                    expanded: _spontaneousExpanded,
+                    onToggle: () => setState(
+                        () => _spontaneousExpanded = !_spontaneousExpanded),
+                    onAdd: () => _openCheckinCreate(
+                      tripId: trip.id,
+                      itemId: null,
+                      kind: 'spontaneous',
+                    ),
+                    onTapCheckin: (c) => context.push(
+                      '/checkins/${c.id}?tripId=${trip.id}',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final itemIndex = index ~/ 2;
+
+        // Insert "add here" row (odd indices)
+        if (index.isOdd) {
+          return GestureDetector(
+            onTap: () => _showActivitySheet(trip, insertIndex: itemIndex),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 32,
+                    child: Center(
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.border,
+                            width: 1,
+                          ),
+                          color: AppColors.bg,
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          size: 10,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Text(
+                    'add activity here',
+                    style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Item card row (even indices)
+        final item = items[itemIndex];
+        final isNow = nowIndex != null && itemIndex == nowIndex;
+        final isDone = checkedInItemIds.contains(item.id);
+
+        return _TimelineRow(
+          isLast: false,
+          hasConnector: true,
+          dot: _buildDot(isDone: isDone, isNow: isNow),
+          card: _buildItemCard(
+            item: item,
+            isDone: isDone,
+            isNow: isNow,
+            onCheckin: () => _openCheckinCreate(
+              tripId: trip.id,
+              itemId: item.id,
+              kind: 'planned',
+            ),
+            onEdit: () => _showActivitySheet(trip, item: item),
+            onDelete: () => _confirmDeleteItem(trip.id, item),
+          ),
+        );
       },
     );
   }
 
-  void _openCheckinCreate({
+  Future<void> _openCheckinCreate({
     required String tripId,
     required String? itemId,
     required String kind,
-  }) {
+  }) async {
     final params = <String, String>{'kind': kind};
     if (itemId != null) params['itemId'] = itemId;
     final query = params.entries.map((e) => '${e.key}=${e.value}').join('&');
-    context.push('/trips/$tripId/checkin/create?$query');
+    final result = await context.push<bool>(
+        '/trips/$tripId/checkin/create?$query');
+    if (result == true && mounted) {
+      ref.invalidate(tripCheckinsProvider(tripId));
+    }
   }
 
   // ---------------------------------------------------------------------------
-  // Dot builders
+  // Activity sheet helpers
+  // ---------------------------------------------------------------------------
+
+  void _showActivitySheet(
+    TripEntity trip, {
+    int? insertIndex,
+    ItineraryItemEntity? item,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
+      ),
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _ActivitySheet(
+          tripId: trip.id,
+          item: item,
+          insertAfterDay: _selectedDay,
+          insertAfterIndex: insertIndex,
+          onSaved: () {},
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteItem(String tripId, ItineraryItemEntity item) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('delete activity?'),
+        content: Text('remove "${item.title}" from this day?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref
+                  .read(itineraryItemsProvider(tripId).notifier)
+                  .deleteItem(item.id);
+            },
+            child: const Text(
+              'delete',
+              style: TextStyle(color: AppColors.coral),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Dots
   // ---------------------------------------------------------------------------
 
   Widget _buildDot({required bool isDone, required bool isNow}) {
     if (isDone) {
       return Container(
-        width: 18,
-        height: 18,
+        width: 20,
+        height: 20,
         decoration: const BoxDecoration(
           color: AppColors.accentGreen,
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.check, color: AppColors.white, size: 11),
+        child: const Icon(Icons.check_rounded,
+            color: AppColors.white, size: 12),
       );
     }
     if (isNow) {
       return Container(
-        width: 18,
-        height: 18,
+        width: 20,
+        height: 20,
         decoration: BoxDecoration(
-          color: AppColors.text,
+          color: _kAmberBg,
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.text, width: 1.5),
+          border: Border.all(color: _kAmberText, width: 1.5),
         ),
         child: Center(
           child: Container(
-            width: 6,
-            height: 6,
+            width: 7,
+            height: 7,
             decoration: const BoxDecoration(
-              color: AppColors.white,
+              color: _kAmberText,
               shape: BoxShape.circle,
             ),
           ),
@@ -472,36 +716,33 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     }
     // Upcoming
     return Container(
-      width: 18,
-      height: 18,
+      width: 20,
+      height: 20,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.bg,
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.border, width: 1.5),
+        border: Border.all(color: AppColors.border, width: 1.0),
       ),
     );
   }
 
   Widget _buildSpontaneousDot() {
     return Container(
-      width: 18,
-      height: 18,
+      width: 20,
+      height: 20,
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.bg,
         shape: BoxShape.circle,
-        border: Border.all(
-          color: AppColors.border,
-          width: 1.0,
-        ),
+        border: Border.all(color: AppColors.border, width: 1.0),
       ),
       child: const Center(
-        child: Icon(Icons.add, size: 11, color: AppColors.textMuted),
+        child: Icon(Icons.add, size: 12, color: AppColors.textMuted),
       ),
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Card builders
+  // Cards
   // ---------------------------------------------------------------------------
 
   Widget _buildItemCard({
@@ -509,177 +750,25 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     required bool isDone,
     required bool isNow,
     required VoidCallback onCheckin,
+    required VoidCallback onEdit,
+    required VoidCallback onDelete,
   }) {
-    Color bgColor;
-    Color borderColor;
-    Color titleColor;
-    double borderWidth;
-
     if (isDone) {
-      bgColor = AppColors.accentGreenLight;
-      borderColor = AppColors.accentGreen;
-      titleColor = AppColors.accentGreenDark;
-      borderWidth = 1.0;
-    } else if (isNow) {
-      bgColor = AppColors.white;
-      borderColor = AppColors.text;
-      titleColor = AppColors.text;
-      borderWidth = 1.5;
-    } else {
-      bgColor = AppColors.surfaceVariant;
-      borderColor = AppColors.border;
-      titleColor = AppColors.textMuted;
-      borderWidth = 1.0;
+      return _DoneCard(item: item, onEdit: onEdit, onDelete: onDelete);
     }
-
-    return GestureDetector(
-      onTap: isDone
-          ? () {
-              // navigate to checkin detail if we had the id
-            }
-          : null,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: borderColor, width: borderWidth),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (item.startTime != null)
-              Text(
-                item.startTime!,
-                style: const TextStyle(
-                  fontSize: 9,
-                  color: AppColors.textMuted,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            Text(
-              item.title,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: titleColor,
-              ),
-            ),
-            if (isDone) ...[
-              const SizedBox(height: 3),
-              const Text(
-                '0 photos',
-                style: TextStyle(
-                  fontSize: 9,
-                  color: AppColors.accentGreen,
-                ),
-              ),
-            ] else if (isNow) ...[
-              if (item.description != null &&
-                  item.description!.isNotEmpty) ...[
-                const SizedBox(height: 3),
-                Text(
-                  item.description!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 9,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-              if (item.locationName != null) ...[
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_outlined,
-                        size: 9, color: AppColors.textMuted),
-                    const SizedBox(width: 2),
-                    Flexible(
-                      child: Text(
-                        item.locationName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: onCheckin,
-                child: Container(
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: AppColors.text,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '📷  check in here',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ] else ...[
-              if (item.description != null &&
-                  item.description!.isNotEmpty) ...[
-                const SizedBox(height: 3),
-                Text(
-                  item.description!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 9,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSpontaneousCard({required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: AppColors.border,
-            width: 0.5,
-            // dashed effect via custom painter below
-          ),
-        ),
-        child: const Text(
-          'something unplanned happened?',
-          style: TextStyle(
-            fontSize: 10,
-            color: AppColors.textMuted,
-          ),
-        ),
-      ),
-    );
+    if (isNow) {
+      return _NowCard(
+        item: item,
+        onCheckin: onCheckin,
+        onEdit: onEdit,
+        onDelete: onDelete,
+      );
+    }
+    return _UpcomingCard(item: item, onEdit: onEdit, onDelete: onDelete);
   }
 
   // ---------------------------------------------------------------------------
-  // Error state
+  // Error
   // ---------------------------------------------------------------------------
 
   Widget _buildErrorState({required VoidCallback onRetry}) {
@@ -740,26 +829,24 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                 activeIcon: Icons.explore,
                 label: 'explore',
                 selected: _navIndex == 1,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('coming soon')),
-                  );
-                },
+                onTap: () => ScaffoldMessenger.of(context)
+                    .showSnackBar(const SnackBar(content: Text('coming soon'))),
               ),
+              // FAB center
               Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => context.push(AppRoutes.createTrip),
                   child: Center(
                     child: Container(
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       decoration: const BoxDecoration(
                         color: AppColors.text,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.add,
-                          color: AppColors.white, size: 22),
+                          color: AppColors.white, size: 20),
                     ),
                   ),
                 ),
@@ -787,7 +874,1027 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
 }
 
 // ---------------------------------------------------------------------------
-// Timeline row widget
+// Activity bottom sheet
+// ---------------------------------------------------------------------------
+
+class _ActivitySheet extends ConsumerStatefulWidget {
+  const _ActivitySheet({
+    required this.tripId,
+    required this.item,
+    required this.insertAfterDay,
+    required this.insertAfterIndex,
+    required this.onSaved,
+  });
+
+  final String tripId;
+  final ItineraryItemEntity? item;
+  final int insertAfterDay;
+  final int? insertAfterIndex;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_ActivitySheet> createState() => _ActivitySheetState();
+}
+
+class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nameController;
+  late final TextEditingController _locationController;
+  TimeOfDay? _startTime;
+  bool _saving = false;
+
+  bool get _isEditMode => widget.item != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.item;
+    _nameController = TextEditingController(text: item?.title ?? '');
+    _locationController = TextEditingController(text: item?.locationName ?? '');
+
+    if (item?.startTime != null) {
+      final parts = item!.startTime!.split(':');
+      if (parts.length >= 2) {
+        _startTime = TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 0,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
+
+  String get _formattedTime {
+    if (_startTime == null) return '';
+    final h = _startTime!.hour.toString().padLeft(2, '0');
+    final m = _startTime!.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime ?? TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() => _startTime = picked);
+    }
+  }
+
+  Future<void> _save() async {
+    if (_nameController.text.trim().isEmpty) return;
+    if (_saving) return;
+    setState(() => _saving = true);
+
+    try {
+      final notifier =
+          ref.read(itineraryItemsProvider(widget.tripId).notifier);
+
+      if (_isEditMode) {
+        final body = <String, dynamic>{
+          'title': _nameController.text.trim(),
+          if (_locationController.text.trim().isNotEmpty)
+            'location_name': _locationController.text.trim(),
+          if (_startTime != null)
+            'start_time':
+                '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}:00',
+        };
+        await notifier.updateItem(widget.item!.id, body);
+      } else {
+        final body = <String, dynamic>{
+          'day': widget.insertAfterDay,
+          'title': _nameController.text.trim(),
+          if (_locationController.text.trim().isNotEmpty)
+            'location_name': _locationController.text.trim(),
+          if (_startTime != null)
+            'start_time':
+                '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}:00',
+        };
+        await notifier.createItem(body);
+      }
+
+      widget.onSaved();
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final nameIsEmpty = _nameController.text.trim().isEmpty;
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Sheet title
+              Text(
+                _isEditMode ? 'edit activity' : 'add activity',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Name field
+              const _SheetLabel(text: 'name'),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _nameController,
+                autofocus: !_isEditMode,
+                textCapitalization: TextCapitalization.none,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.text,
+                ),
+                decoration: _inputDecoration('activity name'),
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 14),
+
+              // Location field
+              const _SheetLabel(text: 'location'),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _locationController,
+                textCapitalization: TextCapitalization.none,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.text,
+                ),
+                decoration: _inputDecoration('location (optional)'),
+              ),
+              const SizedBox(height: 14),
+
+              // Start time picker
+              const _SheetLabel(text: 'start time'),
+              const SizedBox(height: 6),
+              GestureDetector(
+                onTap: _pickTime,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    border:
+                        Border.all(color: AppColors.border, width: 0.5),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.schedule_outlined,
+                          size: 14, color: AppColors.textMuted),
+                      const SizedBox(width: 8),
+                      Text(
+                        _startTime != null
+                            ? _formattedTime
+                            : 'tap to set time',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _startTime != null
+                              ? AppColors.text
+                              : AppColors.textMuted,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (_startTime != null)
+                        GestureDetector(
+                          onTap: () => setState(() => _startTime = null),
+                          child: const Icon(Icons.close,
+                              size: 14, color: AppColors.textMuted),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Save button
+              GestureDetector(
+                onTap: nameIsEmpty || _saving ? null : _save,
+                child: AnimatedOpacity(
+                  opacity: nameIsEmpty ? 0.4 : 1.0,
+                  duration: const Duration(milliseconds: 150),
+                  child: Container(
+                    width: double.infinity,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.text,
+                      borderRadius: BorderRadius.circular(AppRadius.card),
+                    ),
+                    child: Center(
+                      child: _saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: AppColors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              _isEditMode ? 'save changes' : 'add activity',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(
+        fontSize: 13,
+        color: AppColors.textMuted,
+      ),
+      filled: true,
+      fillColor: AppColors.surfaceVariant,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        borderSide: const BorderSide(color: AppColors.border, width: 0.5),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        borderSide: const BorderSide(color: AppColors.border, width: 0.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        borderSide: const BorderSide(color: AppColors.text, width: 1.0),
+      ),
+    );
+  }
+}
+
+// Sheet field label
+class _SheetLabel extends StatelessWidget {
+  const _SheetLabel({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        color: AppColors.textMuted,
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Card: done
+// ---------------------------------------------------------------------------
+
+class _DoneCard extends StatelessWidget {
+  const _DoneCard({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final ItineraryItemEntity item;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.accentGreenLight,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.accentGreen, width: 0.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.startTime != null)
+                  Text(
+                    _fmtTime(item.startTime!),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.accentGreen,
+                    ),
+                  ),
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.accentGreenDark,
+                  ),
+                ),
+                if (item.locationName != null) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          size: 10, color: AppColors.accentGreen),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          item.locationName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.accentGreen,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 5),
+                const Row(
+                  children: [
+                    Icon(Icons.photo_camera_outlined,
+                        size: 11, color: AppColors.accentGreen),
+                    SizedBox(width: 4),
+                    Text(
+                      '0 photos',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.accentGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Action icons + done badge
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CardIconButton(
+                    icon: Icons.edit_outlined,
+                    onTap: onEdit,
+                  ),
+                  const SizedBox(width: 2),
+                  _CardIconButton(
+                    icon: Icons.delete_outline,
+                    onTap: onDelete,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const _StateBadge(
+                label: 'done',
+                bg: AppColors.accentGreenLight,
+                textColor: AppColors.accentGreenDark,
+                icon: Icons.check_circle_outline,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Card: now
+// ---------------------------------------------------------------------------
+
+class _NowCard extends StatelessWidget {
+  const _NowCard({
+    required this.item,
+    required this.onCheckin,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final ItineraryItemEntity item;
+  final VoidCallback onCheckin;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.text, width: 1.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (item.startTime != null)
+                      Text(
+                        _fmtTime(item.startTime!),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.text,
+                      ),
+                    ),
+                    if (item.description != null &&
+                        item.description!.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        item.description!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                    if (item.locationName != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined,
+                              size: 11, color: AppColors.textMuted),
+                          const SizedBox(width: 3),
+                          Flexible(
+                            child: Text(
+                              item.locationName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Action icons + now badge
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _CardIconButton(
+                        icon: Icons.edit_outlined,
+                        onTap: onEdit,
+                      ),
+                      const SizedBox(width: 2),
+                      _CardIconButton(
+                        icon: Icons.delete_outline,
+                        onTap: onDelete,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const _StateBadge(
+                    label: 'now',
+                    bg: _kAmberBg,
+                    textColor: _kAmberText,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // CTA button
+          GestureDetector(
+            onTap: onCheckin,
+            child: Container(
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.text,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+              ),
+              child: const Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.camera_alt_outlined,
+                        size: 14, color: AppColors.white),
+                    SizedBox(width: 6),
+                    Text(
+                      'check in here',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.white,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Spontaneous group (collapsible)
+// ---------------------------------------------------------------------------
+
+class _SpontaneousGroup extends StatelessWidget {
+  const _SpontaneousGroup({
+    required this.checkins,
+    required this.expanded,
+    required this.onToggle,
+    required this.onAdd,
+    required this.onTapCheckin,
+  });
+
+  final List<CheckinEntity> checkins;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final VoidCallback onAdd;
+  final void Function(CheckinEntity) onTapCheckin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Group header — always visible
+        GestureDetector(
+          onTap: onToggle,
+          child: _DashedBorderBox(
+            color: AppColors.border,
+            borderRadius: AppRadius.card,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              child: Row(
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(color: AppColors.border, width: 0.5),
+                    ),
+                    child: const Icon(Icons.bolt_outlined,
+                        size: 13, color: AppColors.textMuted),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          checkins.isEmpty
+                              ? 'spontaneous moments'
+                              : '${checkins.length} spontaneous moment${checkins.length == 1 ? '' : 's'}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: checkins.isNotEmpty
+                                ? FontWeight.w500
+                                : FontWeight.w400,
+                            color: checkins.isNotEmpty
+                                ? AppColors.textSecondary
+                                : AppColors.textMuted,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          checkins.isEmpty
+                              ? 'log something unplanned'
+                              : expanded ? 'tap to collapse' : 'tap to expand',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: expanded ? 0.25 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.chevron_right,
+                        size: 16, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Expanded: list of logged moments + add button
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: expanded
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    children: [
+                      ...checkins.map((c) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: _SpontaneousCheckinCard(
+                              checkin: c,
+                              onTap: () => onTapCheckin(c),
+                            ),
+                          )),
+                      // Add button
+                      GestureDetector(
+                        onTap: onAdd,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceVariant,
+                            borderRadius: BorderRadius.circular(AppRadius.card),
+                            border: Border.all(
+                                color: AppColors.border, width: 0.5),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add,
+                                  size: 13, color: AppColors.textMuted),
+                              SizedBox(width: 8),
+                              Text(
+                                'log another moment',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+
+        // When collapsed and empty: show add inline
+        if (!expanded && checkins.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: GestureDetector(
+              onTap: onAdd,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: AppColors.border, width: 0.5),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.add, size: 13, color: AppColors.textMuted),
+                    SizedBox(width: 8),
+                    Text(
+                      'something unplanned happened?',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Card: spontaneous checkin (logged)
+// ---------------------------------------------------------------------------
+
+class _SpontaneousCheckinCard extends StatelessWidget {
+  const _SpontaneousCheckinCard({
+    required this.checkin,
+    required this.onTap,
+  });
+
+  final CheckinEntity checkin;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final h = checkin.capturedAt.hour.toString().padLeft(2, '0');
+    final m = checkin.capturedAt.minute.toString().padLeft(2, '0');
+    final timeStr = '$h:$m';
+    final note = checkin.memory?.note;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: BoxDecoration(
+          color: AppColors.accentGreenLight,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          border: Border.all(color: AppColors.accentGreen, width: 0.5),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    timeStr,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.accentGreen,
+                    ),
+                  ),
+                  Text(
+                    note != null && note.isNotEmpty ? note : 'spontaneous moment',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.accentGreenDark,
+                    ),
+                  ),
+                  if (checkin.memory?.mood != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      _moodEmoji(checkin.memory!.mood!),
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 14, color: AppColors.accentGreen),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _moodEmoji(String mood) {
+    switch (mood) {
+      case 'love': return '';
+      case 'neutral': return '';
+      case 'sad': return '';
+      default: return '';
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Card: upcoming
+// ---------------------------------------------------------------------------
+
+class _UpcomingCard extends StatelessWidget {
+  const _UpcomingCard({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final ItineraryItemEntity item;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.startTime != null)
+                  Text(
+                    _fmtTime(item.startTime!),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (item.locationName != null) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          size: 10, color: AppColors.textMuted),
+                      const SizedBox(width: 3),
+                      Flexible(
+                        child: Text(
+                          item.locationName!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Action icons + upcoming badge
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CardIconButton(
+                    icon: Icons.edit_outlined,
+                    onTap: onEdit,
+                  ),
+                  const SizedBox(width: 2),
+                  _CardIconButton(
+                    icon: Icons.delete_outline,
+                    onTap: onDelete,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const _StateBadge(
+                label: 'upcoming',
+                bg: _kBlueBg,
+                textColor: _kBlueText,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Card icon button (edit / delete)
+// ---------------------------------------------------------------------------
+
+class _CardIconButton extends StatelessWidget {
+  const _CardIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(icon, size: 14, color: AppColors.textMuted),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// State badge pill
+// ---------------------------------------------------------------------------
+
+class _StateBadge extends StatelessWidget {
+  const _StateBadge({
+    required this.label,
+    required this.bg,
+    required this.textColor,
+    this.icon,
+  });
+
+  final String label;
+  final Color bg;
+  final Color textColor;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 10, color: textColor),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Timeline row
 // ---------------------------------------------------------------------------
 
 class _TimelineRow extends StatelessWidget {
@@ -795,11 +1902,13 @@ class _TimelineRow extends StatelessWidget {
     required this.dot,
     required this.card,
     required this.isLast,
+    required this.hasConnector,
   });
 
   final Widget dot;
   final Widget card;
   final bool isLast;
+  final bool hasConnector;
 
   @override
   Widget build(BuildContext context) {
@@ -808,16 +1917,17 @@ class _TimelineRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 28,
+            width: 32,
             child: Column(
               children: [
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 dot,
-                if (!isLast)
+                if (hasConnector)
                   Expanded(
                     child: Center(
                       child: Container(
                         width: 1,
+                        margin: const EdgeInsets.symmetric(vertical: 4),
                         color: AppColors.border,
                       ),
                     ),
@@ -825,7 +1935,6 @@ class _TimelineRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -836,6 +1945,94 @@ class _TimelineRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Dashed border box
+// ---------------------------------------------------------------------------
+
+class _DashedBorderBox extends StatelessWidget {
+  const _DashedBorderBox({
+    required this.child,
+    required this.color,
+    required this.borderRadius,
+    this.dashLength = 5.0,
+    this.gapLength = 4.0,
+    this.strokeWidth = 1.0,
+  });
+
+  final Widget child;
+  final Color color;
+  final double borderRadius;
+  final double dashLength;
+  final double gapLength;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedBorderPainter(
+        color: color,
+        borderRadius: borderRadius,
+        dashLength: dashLength,
+        gapLength: gapLength,
+        strokeWidth: strokeWidth,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({
+    required this.color,
+    required this.borderRadius,
+    this.strokeWidth = 1.0,
+    this.dashLength = 5.0,
+    this.gapLength = 4.0,
+  });
+
+  final Color color;
+  final double borderRadius;
+  final double strokeWidth;
+  final double dashLength;
+  final double gapLength;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+          strokeWidth / 2, strokeWidth / 2,
+          size.width - strokeWidth, size.height - strokeWidth),
+      Radius.circular(borderRadius),
+    );
+    final path = Path()..addRRect(rrect);
+    final pathMetrics = path.computeMetrics();
+
+    for (final metric in pathMetrics) {
+      double distance = 0;
+      while (distance < metric.length) {
+        canvas.drawPath(
+          metric.extractPath(distance, distance + dashLength),
+          paint,
+        );
+        distance += dashLength + gapLength;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter old) =>
+      old.color != color || old.borderRadius != borderRadius;
 }
 
 // ---------------------------------------------------------------------------
@@ -862,7 +2059,7 @@ class _AvatarCircle extends StatelessWidget {
         child: Text(
           initial,
           style: TextStyle(
-            fontSize: size * 0.45,
+            fontSize: size * 0.42,
             fontWeight: FontWeight.w600,
             color: AppColors.accentGreenDark,
           ),
@@ -873,7 +2070,7 @@ class _AvatarCircle extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Nav item (mirrored from home page)
+// Nav item
 // ---------------------------------------------------------------------------
 
 class _NavItem extends StatelessWidget {
@@ -901,7 +2098,7 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(selected ? activeIcon : icon, color: color, size: 22),
+            Icon(selected ? activeIcon : icon, color: color, size: 20),
             const SizedBox(height: 2),
             Text(
               label,

@@ -1,3 +1,4 @@
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/core/demo/mock_data.dart';
 import 'package:memories_app/core/network/api_client.dart';
 import 'package:memories_app/features/trips/data/models/public_trip_model.dart';
@@ -20,6 +21,7 @@ class TripsRemoteDataSource {
     final t = detail.trip;
     final tripModel = TripModel(
       id: t.id,
+      ownerId: t.ownerId,
       title: t.title,
       destination: t.destination,
       startDate: t.startDate,
@@ -54,6 +56,7 @@ class TripsRemoteDataSource {
       locationName: e.locationName,
       lat: e.lat,
       lng: e.lng,
+      category: e.category,
       source: e.source,
       createdAt: DateTime(2024, 5, 1),
     );
@@ -67,9 +70,10 @@ class TripsRemoteDataSource {
     // DEMO: return mock trips list
     if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 300));
-      return mockTripsList.map((t) {
+      return mockTripsList.map<TripModel>((t) {
         return TripModel(
           id: t.id,
+          ownerId: t.ownerId,
           title: t.title,
           destination: t.destination,
           startDate: t.startDate,
@@ -177,7 +181,7 @@ class TripsRemoteDataSource {
 
   Future<List<ItineraryItemModel>> generateItinerary(String tripId) async {
     // DEMO: return Bali itinerary (the "AI-generated" result)
-    if (_demoMode) {
+    if (kDemoMode || kStubAi) {
       await Future.delayed(const Duration(seconds: 3)); // simulate AI latency
       return mockBaliItinerary.map(_itemToModel).toList();
     }
@@ -195,7 +199,7 @@ class TripsRemoteDataSource {
     List<Map<String, String>> history,
   ) async {
     // DEMO: echo a canned AI reply
-    if (_demoMode) {
+    if (kDemoMode || kStubAi) {
       await Future.delayed(const Duration(milliseconds: 800));
       return 'Got it! In demo mode the itinerary is fixed, but in the real app '
           'I would refine the plan based on your message: "$message"';
@@ -209,6 +213,37 @@ class TripsRemoteDataSource {
       },
     );
     return (data as Map<String, dynamic>)['reply'] as String;
+  }
+
+  Future<ItineraryItemModel> createItem(
+    String tripId,
+    Map<String, dynamic> body,
+  ) async {
+    // DEMO: build a local user item without hitting the backend
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 250));
+      return ItineraryItemModel(
+        id: 'item-${DateTime.now().millisecondsSinceEpoch}',
+        tripId: tripId,
+        day: (body['day'] as num?)?.toInt() ?? 1,
+        title: (body['title'] as String?) ?? '',
+        startTime: body['start_time'] as String?,
+        endTime: body['end_time'] as String?,
+        description: body['description'] as String?,
+        locationName: body['location_name'] as String?,
+        lat: (body['lat'] as num?)?.toDouble(),
+        lng: (body['lng'] as num?)?.toDouble(),
+        category: body['category'] as String?,
+        source: 'user',
+        createdAt: DateTime.now(),
+      );
+    }
+    // DEMO: real API call below
+    final data = await _apiClient.post(
+      '/api/v1/trips/$tripId/items',
+      data: body,
+    );
+    return ItineraryItemModel.fromJson(data as Map<String, dynamic>);
   }
 
   Future<List<ItineraryItemModel>> getItems(String tripId) async {
@@ -250,6 +285,7 @@ class TripsRemoteDataSource {
         locationName: original.locationName,
         lat: original.lat,
         lng: original.lng,
+        category: (body['category'] as String?) ?? original.category,
         source: original.source,
       );
       return _itemToModel(updated);

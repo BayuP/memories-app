@@ -64,6 +64,7 @@ func (s *Service) CreateItem(ctx context.Context, tripID, callerID uuid.UUID, re
 		LocationName: req.LocationName,
 		Lat:          req.Lat,
 		Lng:          req.Lng,
+		Category:     req.Category,
 		Source:       "user",
 	})
 	if err != nil {
@@ -116,6 +117,9 @@ func (s *Service) UpdateItem(ctx context.Context, tripID, itemID, callerID uuid.
 	if req.Lng != nil {
 		existing.Lng = req.Lng
 	}
+	if req.Category != nil {
+		existing.Category = req.Category
+	}
 
 	updated, err := s.repo.UpdateItem(ctx, itemID, UpdateItemParams{
 		Day:          existing.Day,
@@ -126,6 +130,7 @@ func (s *Service) UpdateItem(ctx context.Context, tripID, itemID, callerID uuid.
 		LocationName: existing.LocationName,
 		Lat:          existing.Lat,
 		Lng:          existing.Lng,
+		Category:     existing.Category,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("update item: %w", err)

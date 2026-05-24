@@ -44,12 +44,12 @@ func (s *Service) UpdateMe(ctx context.Context, userID uuid.UUID, params UpdateU
 	return user, nil
 }
 
-// SearchByHandle finds users whose handle starts with the given prefix.
-func (s *Service) SearchByHandle(ctx context.Context, prefix string) ([]*User, error) {
+// SearchByHandle finds users whose handle starts with the given prefix, excluding the caller.
+func (s *Service) SearchByHandle(ctx context.Context, prefix string, excludeID uuid.UUID) ([]*User, error) {
 	if prefix == "" {
 		return nil, nil
 	}
-	users, err := s.repo.SearchByHandle(ctx, prefix, 20)
+	users, err := s.repo.SearchByHandle(ctx, prefix, excludeID, 20)
 	if err != nil {
 		return nil, fmt.Errorf("search by handle: %w", err)
 	}

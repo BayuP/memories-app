@@ -123,4 +123,10 @@ class CheckinRepositoryImpl implements CheckinRepository {
   Future<void> deleteMedia(String mediaId) async {
     await _dataSource.deleteMedia(mediaId);
   }
+
+  @override
+  Future<List<CheckinEntity>> listCheckins(String tripId) async {
+    final models = await _dataSource.listCheckins(tripId);
+    return models.map((m) => m.toEntity()).toList();
+  }
 }

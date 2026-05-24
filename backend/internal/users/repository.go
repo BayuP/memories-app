@@ -29,7 +29,7 @@ type Repository interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByHandle(ctx context.Context, handle string) (*User, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, params UpdateUserParams) (*User, error)
-	SearchByHandle(ctx context.Context, prefix string, limit int) ([]*User, error)
+	SearchByHandle(ctx context.Context, prefix string, excludeID uuid.UUID, limit int) ([]*User, error)
 }
 
 type postgresRepository struct {
@@ -103,10 +103,10 @@ func (r *postgresRepository) UpdateUser(ctx context.Context, id uuid.UUID, p Upd
 	return u, nil
 }
 
-func (r *postgresRepository) SearchByHandle(ctx context.Context, prefix string, limit int) ([]*User, error) {
+func (r *postgresRepository) SearchByHandle(ctx context.Context, prefix string, excludeID uuid.UUID, limit int) ([]*User, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT `+userColumns+` FROM users WHERE handle LIKE $1 ORDER BY handle LIMIT $2`,
-		prefix+"%", limit,
+		`SELECT `+userColumns+` FROM users WHERE handle LIKE $1 AND id != $2 ORDER BY handle LIMIT $3`,
+		prefix+"%", excludeID, limit,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("search by handle: %w", err)

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:memories_app/core/constants/api_constants.dart';
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/core/network/secure_storage.dart';
 
 class ApiException implements Exception {
@@ -171,7 +172,8 @@ class _AuthInterceptor extends Interceptor {
         options.path == ApiConstants.authSignUp ||
         options.path == ApiConstants.authRefresh;
 
-    if (!isAuthEndpoint) {
+    // SKIP_AUTH: attach no Bearer token when auth is bypassed
+    if (!kSkipAuth && !isAuthEndpoint) {
       final token = await SecureStorageService.instance.getAccessToken();
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
@@ -194,7 +196,8 @@ class _AuthInterceptor extends Interceptor {
         err.requestOptions.path == ApiConstants.authSignUp ||
         err.requestOptions.path == ApiConstants.authRefresh;
 
-    if (statusCode == 401 && !isAuthEndpoint && !_isRefreshing) {
+    // SKIP_AUTH: no token refresh when auth is bypassed
+    if (statusCode == 401 && !isAuthEndpoint && !_isRefreshing && !kSkipAuth) {
       _isRefreshing = true;
 
       try {

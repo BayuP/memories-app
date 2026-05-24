@@ -66,10 +66,14 @@ class CheckinMemoryModel {
   final String? sharedWith;
 
   factory CheckinMemoryModel.fromJson(Map<String, dynamic> json) {
+    final sw = json['shared_with'];
+    final sharedWith = sw is List
+        ? (sw.isEmpty ? null : sw.map((e) => e.toString()).join(','))
+        : sw as String?;
     return CheckinMemoryModel(
       note: json['note'] as String?,
       mood: json['mood'] as String?,
-      sharedWith: json['shared_with'] as String?,
+      sharedWith: sharedWith,
     );
   }
 

@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
+import 'package:image_picker/image_picker.dart';
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/core/demo/mock_data.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
+import 'package:memories_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
 import 'package:memories_app/features/trips/presentation/widgets/trip_card.dart';
@@ -22,24 +26,28 @@ class CreateTripPage extends ConsumerStatefulWidget {
 }
 
 class _CreateTripPageState extends ConsumerState<CreateTripPage> {
-  int _step = 0; // 0 = details, 1 = invite, 2 = generating
+  int _step = 0; // 0 = details, 1 = invite+choice, 2 = generating
 
-  // Step 1 state
+  // Step 0 state
   final _titleController = TextEditingController();
   final _destinationController = TextEditingController();
   DateTime? _startDate;
   DateTime? _endDate;
   final Set<String> _selectedVibes = {};
+  File? _coverImage;
+  bool _isCreating = false;
 
-  // Step 2 state
+  // Step 1 state
   final List<PublicProfileEntity> _addedUsers = [];
 
-  // Step 3 state (after creation)
+  // Created trip ID (set after step 0 API call)
   String? _createdTripId;
 
   // Validation errors
   String? _titleError;
   String? _destinationError;
+  String? _startDateError;
+  String? _endDateError;
 
   static const _vibes = [
     'adventure',
@@ -58,16 +66,37 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
 
   void _goToStep(int step) => setState(() => _step = step);
 
+  Future<void> _pickCoverImage() async {
+    final picker = ImagePicker();
+    final picked =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked != null) setState(() => _coverImage = File(picked.path));
+  }
+
   bool _validateStep1() {
+    String? titleErr = _titleController.text.trim().isEmpty
+        ? 'trip name is required'
+        : null;
+    String? destErr = _destinationController.text.trim().isEmpty
+        ? 'destination is required'
+        : null;
+    String? startErr = _startDate == null ? 'required' : null;
+    String? endErr = _endDate == null ? 'required' : null;
+
+    if (startErr == null && endErr == null && _endDate!.isBefore(_startDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('end date must be after start date')),
+      );
+      return false;
+    }
+
     setState(() {
-      _titleError = _titleController.text.trim().isEmpty
-          ? 'trip name is required'
-          : null;
-      _destinationError = _destinationController.text.trim().isEmpty
-          ? 'destination is required'
-          : null;
+      _titleError = titleErr;
+      _destinationError = destErr;
+      _startDateError = startErr;
+      _endDateError = endErr;
     });
-    return _titleError == null && _destinationError == null;
+    return titleErr == null && destErr == null && startErr == null && endErr == null;
   }
 
   @override
@@ -82,6 +111,11 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
           vibes: _vibes,
           titleError: _titleError,
           destinationError: _destinationError,
+          startDateError: _startDateError,
+          endDateError: _endDateError,
+          coverImage: _coverImage,
+          isCreating: _isCreating,
+          onPickCover: _pickCoverImage,
           onStartDateChanged: (d) => setState(() => _startDate = d),
           onEndDateChanged: (d) => setState(() => _endDate = d),
           onVibeToggled: (v) => setState(() {
@@ -91,17 +125,15 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
               _selectedVibes.add(v);
             }
           }),
-          onNext: () {
-            if (_validateStep1()) _goToStep(1);
-          },
+          onNext: _createTripNow,
         ),
       1 => _Step2Widget(
           addedUsers: _addedUsers,
           onUserAdded: (u) => setState(() => _addedUsers.add(u)),
           onUserRemoved: (u) =>
               setState(() => _addedUsers.removeWhere((x) => x.id == u.id)),
-          onSkip: _startCreating,
-          onNext: _startCreating,
+          onBuildAi: () => _buildItinerary(useAi: true),
+          onBuildManual: () => _buildItinerary(useAi: false),
         ),
       2 => _Step3GeneratingWidget(
           destination: _destinationController.text.trim(),
@@ -113,26 +145,24 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
     };
   }
 
-  Future<void> _startCreating() async {
-    setState(() => _step = 2);
+  // Step 0 CTA — create the trip immediately, then move to invite/itinerary step.
+  Future<void> _createTripNow() async {
+    if (!_validateStep1()) return;
+    setState(() => _isCreating = true);
 
-    // DEMO: skip real API — use mock Bali itinerary to simulate AI generation
-    if (ref.read(demoModeProvider)) {
-      // Simulate the generating animation for a moment
-      await Future.delayed(const Duration(seconds: 3));
+    // DEMO: skip API, use mock trip
+    if (kDemoMode) {
+      await Future.delayed(const Duration(milliseconds: 400));
       if (!mounted) return;
-      final tripId = mockTripBali.id;
-      setState(() => _createdTripId = tripId);
-      context.pushReplacement(
-        '/trips/$tripId/itinerary-review',
-        extra: {'items': mockBaliItinerary, 'tripId': tripId},
-      );
+      setState(() {
+        _createdTripId = mockTripBali.id;
+        _isCreating = false;
+        _step = 1;
+      });
       return;
     }
-    // DEMO: real trip creation below
 
     try {
-      // Create trip
       final repo = ref.read(tripsRepositoryProvider);
       final detail = await repo.createTrip(
         title: _titleController.text.trim(),
@@ -141,30 +171,65 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
         endDate: _endDate,
         vibes: _selectedVibes.toList(),
       );
+      ref.invalidate(tripsProvider);
+      if (!mounted) return;
+      setState(() {
+        _createdTripId = detail.trip.id;
+        _isCreating = false;
+        _step = 1;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isCreating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('error: ${e.toString()}')),
+      );
+    }
+  }
 
-      final tripId = detail.trip.id;
-      setState(() => _createdTripId = tripId);
+  // Step 1 CTA — add members and generate (or skip) itinerary.
+  Future<void> _buildItinerary({required bool useAi}) async {
+    final tripId = _createdTripId;
+    if (tripId == null) return;
 
-      // Add members
+    setState(() => _step = 2);
+
+    // DEMO: use mock itinerary
+    if (kDemoMode && useAi) {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      context.pushReplacement(
+        '/trips/$tripId/itinerary-review',
+        extra: {'items': mockBaliItinerary, 'tripId': tripId, 'aiEnabled': true},
+      );
+      return;
+    }
+    if (kDemoMode) {
+      if (!mounted) return;
+      context.pushReplacement(
+        '/trips/$tripId/itinerary-review',
+        extra: {'items': <ItineraryItemEntity>[], 'tripId': tripId, 'aiEnabled': false},
+      );
+      return;
+    }
+
+    try {
+      final repo = ref.read(tripsRepositoryProvider);
+
+      // Add invited members (non-fatal)
       for (final user in _addedUsers) {
         try {
           await repo.addMember(tripId, user.id);
-        } catch (_) {
-          // Non-fatal — continue
-        }
+        } catch (_) {}
       }
 
-      // Generate itinerary
-      final items = await repo.generateItinerary(tripId);
+      final items =
+          useAi ? await repo.generateItinerary(tripId) : <ItineraryItemEntity>[];
 
       if (!mounted) return;
-
-      // Invalidate trips list cache
-      ref.invalidate(tripsProvider);
-
       context.pushReplacement(
         '/trips/$tripId/itinerary-review',
-        extra: {'items': items, 'tripId': tripId},
+        extra: {'items': items, 'tripId': tripId, 'aiEnabled': useAi},
       );
     } catch (e) {
       if (!mounted) return;
@@ -190,6 +255,11 @@ class _Step1Widget extends StatelessWidget {
     required this.vibes,
     required this.titleError,
     required this.destinationError,
+    required this.startDateError,
+    required this.endDateError,
+    required this.coverImage,
+    required this.isCreating,
+    required this.onPickCover,
     required this.onStartDateChanged,
     required this.onEndDateChanged,
     required this.onVibeToggled,
@@ -204,6 +274,11 @@ class _Step1Widget extends StatelessWidget {
   final List<String> vibes;
   final String? titleError;
   final String? destinationError;
+  final String? startDateError;
+  final String? endDateError;
+  final File? coverImage;
+  final bool isCreating;
+  final VoidCallback onPickCover;
   final ValueChanged<DateTime?> onStartDateChanged;
   final ValueChanged<DateTime?> onEndDateChanged;
   final ValueChanged<String> onVibeToggled;
@@ -220,42 +295,47 @@ class _Step1Widget extends StatelessWidget {
       ),
       body: Column(
         children: [
-          _ProgressBar(step: 1, total: 3),
+          const _ProgressBar(step: 1, total: 3),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Cover photo placeholder
-                  Container(
-                    height: 80,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(
-                        color: AppColors.border,
-                        width: 0.5,
-                        style: BorderStyle.solid,
+                  // Cover photo
+                  GestureDetector(
+                    onTap: onPickCover,
+                    child: Container(
+                      height: 120,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(
+                          color: AppColors.border,
+                          width: 0.5,
+                        ),
                       ),
-                    ),
-                    child: const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.camera_alt_outlined,
-                              size: 22, color: AppColors.textMuted),
-                          SizedBox(height: 4),
-                          Text(
-                            'add cover photo',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 11,
+                      clipBehavior: Clip.antiAlias,
+                      child: coverImage != null
+                          ? Image.file(coverImage!, fit: BoxFit.cover)
+                          : const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.camera_alt_outlined,
+                                      size: 22, color: AppColors.textMuted),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'add cover photo',
+                                    style: TextStyle(
+                                      color: AppColors.textMuted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -273,21 +353,14 @@ class _Step1Widget extends StatelessWidget {
                   const SizedBox(height: 14),
                   _LabeledField(
                     label: 'DESTINATION',
-                    child: TextFormField(
+                    child: _DestinationField(
                       controller: destinationController,
-                      style: AppTextStyles.bodyMedium,
-                      decoration: InputDecoration(
-                        hintText: 'city, country',
-                        prefixIcon: const Icon(Icons.location_on_outlined,
-                            size: 16, color: AppColors.textMuted),
-                        prefixIconConstraints:
-                            const BoxConstraints(minWidth: 36, minHeight: 36),
-                        errorText: destinationError,
-                      ),
+                      errorText: destinationError,
                     ),
                   ),
                   const SizedBox(height: 14),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: _LabeledField(
@@ -295,7 +368,9 @@ class _Step1Widget extends StatelessWidget {
                           child: _DatePickerButton(
                             value: startDate,
                             hint: 'pick date',
+                            firstDate: DateTime.now(),
                             onChanged: onStartDateChanged,
+                            errorText: startDateError,
                           ),
                         ),
                       ),
@@ -306,7 +381,9 @@ class _Step1Widget extends StatelessWidget {
                           child: _DatePickerButton(
                             value: endDate,
                             hint: 'pick date',
+                            firstDate: startDate ?? DateTime.now(),
                             onChanged: onEndDateChanged,
+                            errorText: endDateError,
                           ),
                         ),
                       ),
@@ -329,8 +406,17 @@ class _Step1Widget extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
-                    onPressed: onNext,
-                    child: const Text('next — invite people'),
+                    onPressed: isCreating ? null : onNext,
+                    child: isCreating
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                        : const Text('looks good — let\'s go'),
                   ),
                 ],
               ),
@@ -351,15 +437,15 @@ class _Step2Widget extends ConsumerStatefulWidget {
     required this.addedUsers,
     required this.onUserAdded,
     required this.onUserRemoved,
-    required this.onSkip,
-    required this.onNext,
+    required this.onBuildAi,
+    required this.onBuildManual,
   });
 
   final List<PublicProfileEntity> addedUsers;
   final ValueChanged<PublicProfileEntity> onUserAdded;
   final ValueChanged<PublicProfileEntity> onUserRemoved;
-  final VoidCallback onSkip;
-  final VoidCallback onNext;
+  final VoidCallback onBuildAi;
+  final VoidCallback onBuildManual;
 
   @override
   ConsumerState<_Step2Widget> createState() => _Step2WidgetState();
@@ -397,7 +483,7 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
       ),
       body: Column(
         children: [
-          _ProgressBar(step: 2, total: 3),
+          const _ProgressBar(step: 2, total: 3),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -473,9 +559,12 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                             color: AppColors.coral, fontSize: 12),
                       ),
                       data: (users) {
+                        final currentUserId =
+                            ref.watch(currentUserIdProvider).valueOrNull;
                         final filtered = users
-                            .where((u) => widget.addedUsers
-                                .every((a) => a.id != u.id))
+                            .where((u) =>
+                                widget.addedUsers.every((a) => a.id != u.id) &&
+                                u.id != currentUserId)
                             .toList();
                         if (filtered.isEmpty) {
                           return const Text(
@@ -519,14 +608,21 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                     ),
                   ],
                   const SizedBox(height: 32),
+                  Text(
+                    'HOW DO YOU WANT TO BUILD IT?',
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.textMuted)
+                        .copyWith(fontSize: 10, letterSpacing: 0.8),
+                  ),
+                  const SizedBox(height: 10),
                   ElevatedButton(
-                    onPressed: widget.onNext,
-                    child: const Text('next — build itinerary'),
+                    onPressed: widget.onBuildAi,
+                    child: const Text('✨ build with AI'),
                   ),
                   const SizedBox(height: 10),
                   OutlinedButton(
-                    onPressed: widget.onSkip,
-                    child: const Text('skip for now'),
+                    onPressed: widget.onBuildManual,
+                    child: const Text('add plans manually'),
                   ),
                 ],
               ),
@@ -754,16 +850,178 @@ class _LabeledField extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Destination field with OSM Nominatim autocomplete
+// ---------------------------------------------------------------------------
+
+class _DestinationField extends StatefulWidget {
+  const _DestinationField({
+    required this.controller,
+    this.errorText,
+  });
+
+  final TextEditingController controller;
+  final String? errorText;
+
+  @override
+  State<_DestinationField> createState() => _DestinationFieldState();
+}
+
+class _DestinationFieldState extends State<_DestinationField> {
+  Timer? _debounce;
+  List<Map<String, dynamic>> _results = [];
+  OverlayEntry? _overlay;
+  final _layerLink = LayerLink();
+  final _fieldKey = GlobalKey();
+  final _dio = Dio();
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _overlay?.remove();
+    _overlay = null;
+    super.dispose();
+  }
+
+  void _onChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().length < 3) {
+      _clearOverlay();
+      return;
+    }
+    _debounce = Timer(
+      const Duration(milliseconds: 300),
+      () => _search(value.trim()),
+    );
+  }
+
+  Future<void> _search(String query) async {
+    try {
+      final res = await _dio.get(
+        'https://nominatim.openstreetmap.org/search',
+        queryParameters: {'q': query, 'format': 'json', 'limit': 5},
+        options: Options(headers: {'User-Agent': 'MemoriesApp/1.0 bayupabisa@gmail.com'}),
+      );
+      if (!mounted) return;
+      final results = List<Map<String, dynamic>>.from(res.data as List);
+      setState(() => _results = results);
+      if (results.isNotEmpty) _showOverlay();
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('[DestinationField] search error: $e\n$st');
+    }
+  }
+
+  void _showOverlay() {
+    _clearOverlay();
+    final renderBox =
+        _fieldKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    final width = renderBox.size.width;
+    final height = renderBox.size.height;
+
+    _overlay = OverlayEntry(
+      builder: (_) => Positioned(
+        width: width,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: Offset(0, height + 2),
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            color: AppColors.white,
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: _results.length,
+              itemBuilder: (ctx, i) {
+                final raw = _results[i]['display_name'] as String? ?? '';
+                // Show first 3 comma-separated parts for brevity
+                final parts = raw.split(',');
+                final label = parts.take(3).join(',').trim();
+                return InkWell(
+                  onTap: () {
+                    widget.controller.text = label;
+                    _clearOverlay();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined,
+                            size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: AppTextStyles.bodyMedium
+                                .copyWith(fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_overlay!);
+  }
+
+  void _clearOverlay() {
+    _overlay?.remove();
+    _overlay = null;
+    if (mounted) setState(() => _results = []);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: TextFormField(
+        key: _fieldKey,
+        controller: widget.controller,
+        style: AppTextStyles.bodyMedium,
+        onChanged: _onChanged,
+        decoration: InputDecoration(
+          hintText: 'city, country',
+          prefixIcon: const Icon(Icons.location_on_outlined,
+              size: 16, color: AppColors.textMuted),
+          prefixIconConstraints:
+              const BoxConstraints(minWidth: 36, minHeight: 36),
+          errorText: widget.errorText,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Date picker button
+// ---------------------------------------------------------------------------
+
 class _DatePickerButton extends StatelessWidget {
   const _DatePickerButton({
     required this.value,
     required this.hint,
     required this.onChanged,
+    this.firstDate,
+    this.errorText,
   });
 
   final DateTime? value;
   final String hint;
   final ValueChanged<DateTime?> onChanged;
+  final DateTime? firstDate;
+  final String? errorText;
 
   String get _label {
     if (value == null) return hint;
@@ -772,40 +1030,68 @@ class _DatePickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: value ?? DateTime.now(),
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          builder: (context, child) => Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                    primary: AppColors.accentGreen,
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () async {
+            final effectiveFirst = firstDate ?? DateTime(2020);
+            final initialDate =
+                (value != null && !value!.isBefore(effectiveFirst))
+                    ? value!
+                    : effectiveFirst;
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: initialDate,
+              firstDate: effectiveFirst,
+              lastDate: DateTime(2100),
+              builder: (context, child) => Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: Theme.of(context).colorScheme.copyWith(
+                        primary: AppColors.accentGreen,
+                      ),
+                ),
+                child: child!,
+              ),
+            );
+            if (picked != null) onChanged(picked);
+          },
+          child: Container(
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                color: errorText != null ? AppColors.coral : AppColors.border,
+                width: errorText != null ? 1.0 : 0.5,
+              ),
             ),
-            child: child!,
-          ),
-        );
-        if (picked != null) onChanged(picked);
-      },
-      child: Container(
-        height: 34,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border, width: 0.5),
-        ),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            _label,
-            style: AppTextStyles.bodyMedium.copyWith(color: value == null ? AppColors.textMuted : AppColors.text,).copyWith(fontSize: 13),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _label,
+                style: AppTextStyles.bodyMedium
+                    .copyWith(
+                        color: value == null
+                            ? AppColors.textMuted
+                            : AppColors.text)
+                    .copyWith(fontSize: 13),
+              ),
+            ),
           ),
         ),
-      ),
+        if (errorText != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            errorText!,
+            style: const TextStyle(
+              color: AppColors.coral,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

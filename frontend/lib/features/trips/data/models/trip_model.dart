@@ -3,6 +3,7 @@ import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 class TripModel {
   const TripModel({
     required this.id,
+    required this.ownerId,
     required this.title,
     required this.destination,
     this.startDate,
@@ -13,6 +14,7 @@ class TripModel {
   });
 
   final String id;
+  final String ownerId;
   final String title;
   final String destination;
   final DateTime? startDate;
@@ -29,6 +31,7 @@ class TripModel {
 
     return TripModel(
       id: json['id'] as String,
+      ownerId: json['owner_id'] as String? ?? '',
       title: json['title'] as String,
       destination: json['destination'] as String,
       startDate: json['start_date'] != null
@@ -46,6 +49,7 @@ class TripModel {
   TripEntity toEntity() {
     return TripEntity(
       id: id,
+      ownerId: ownerId,
       title: title,
       destination: destination,
       startDate: startDate,
@@ -101,12 +105,16 @@ class MemberModel {
   final DateTime joinedAt;
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
+    final joinedRaw =
+        (json['joined_at'] ?? json['created_at']) as String?;
     return MemberModel(
-      userId: json['user_id'] as String,
-      handle: json['handle'] as String,
-      displayName: json['display_name'] as String,
+      userId: json['user_id'] as String? ?? '',
+      handle: json['handle'] as String? ?? '',
+      displayName: json['display_name'] as String? ?? '',
       role: json['role'] as String? ?? 'member',
-      joinedAt: DateTime.parse(json['joined_at'] as String),
+      joinedAt: joinedRaw != null
+          ? (DateTime.tryParse(joinedRaw) ?? DateTime.now())
+          : DateTime.now(),
     );
   }
 
@@ -132,6 +140,7 @@ class ItineraryItemModel {
     this.locationName,
     this.lat,
     this.lng,
+    this.category,
     required this.source,
     required this.createdAt,
   });
@@ -146,6 +155,7 @@ class ItineraryItemModel {
   final String? locationName;
   final double? lat;
   final double? lng;
+  final String? category;
   final String source;
   final DateTime createdAt;
 
@@ -161,6 +171,7 @@ class ItineraryItemModel {
       locationName: json['location_name'] as String?,
       lat: json['lat'] != null ? (json['lat'] as num).toDouble() : null,
       lng: json['lng'] != null ? (json['lng'] as num).toDouble() : null,
+      category: json['category'] as String?,
       source: json['source'] as String? ?? 'manual',
       createdAt: DateTime.parse(json['created_at'] as String),
     );
@@ -178,6 +189,7 @@ class ItineraryItemModel {
       locationName: locationName,
       lat: lat,
       lng: lng,
+      category: category,
       source: source,
     );
   }

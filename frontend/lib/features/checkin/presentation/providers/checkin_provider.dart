@@ -32,3 +32,13 @@ final checkinDetailProvider =
   final repo = ref.watch(checkinRepositoryProvider);
   return repo.getCheckin(id);
 });
+
+// ---------------------------------------------------------------------------
+// Trip checkins provider (family by trip ID)
+// ---------------------------------------------------------------------------
+
+final tripCheckinsProvider =
+    FutureProvider.family<List<CheckinEntity>, String>((ref, tripId) async {
+  final repo = ref.watch(checkinRepositoryProvider);
+  return repo.listCheckins(tripId);
+});

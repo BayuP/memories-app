@@ -31,6 +31,7 @@ type Repository interface {
 	FindRecommendation(ctx context.Context, checkinID uuid.UUID) (*Recommendation, error)
 
 	ListMediaByCheckinID(ctx context.Context, checkinID uuid.UUID) ([]*MediaItem, error)
+	ListByTripID(ctx context.Context, tripID uuid.UUID) ([]*Checkin, error)
 }
 
 // CreateCheckinParams carries required fields for check-in creation.
@@ -218,6 +219,28 @@ func (r *postgresRepository) ListMediaByCheckinID(ctx context.Context, checkinID
 			return nil, fmt.Errorf("list media scan: %w", err)
 		}
 		items = append(items, m)
+	}
+	return items, rows.Err()
+}
+
+func (r *postgresRepository) ListByTripID(ctx context.Context, tripID uuid.UUID) ([]*Checkin, error) {
+	rows, err := r.db.Query(ctx,
+		`SELECT id, trip_id, author_id, itinerary_item_id, captured_at, lat, lng, kind, created_at, updated_at
+		 FROM checkins WHERE trip_id = $1 ORDER BY captured_at`,
+		tripID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list checkins: %w", err)
+	}
+	defer rows.Close()
+
+	var items []*Checkin
+	for rows.Next() {
+		c, err := scanCheckin(rows)
+		if err != nil {
+			return nil, fmt.Errorf("list checkins scan: %w", err)
+		}
+		items = append(items, c)
 	}
 	return items, rows.Err()
 }

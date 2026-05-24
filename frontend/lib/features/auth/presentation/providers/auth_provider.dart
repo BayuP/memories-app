@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
+import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/core/network/api_client.dart';
 import 'package:memories_app/core/network/secure_storage.dart';
 import 'package:memories_app/features/auth/data/datasources/auth_remote_datasource.dart';
@@ -134,6 +134,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
+    // Invalidate current user cache so next login fetches fresh identity.
+    ref.invalidate(currentUserIdProvider);
     // DEMO: skip token clear, just mark unauthenticated
     if (ref.read(demoModeProvider)) {
       state = const AsyncData(AuthState(status: AuthStatus.unauthenticated));
@@ -157,4 +159,16 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
     data: (s) => s.status == AuthStatus.authenticated,
     orElse: () => false,
   );
+});
+
+// Returns the current user's ID from GET /me. Returns null in demo/skip-auth mode.
+final currentUserIdProvider = FutureProvider<String?>((ref) async {
+  if (kDemoMode || kSkipAuth) return null;
+  final client = ref.watch(apiClientProvider);
+  try {
+    final data = await client.get('/me') as Map<String, dynamic>;
+    return data['id'] as String?;
+  } catch (_) {
+    return null;
+  }
 });

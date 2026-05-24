@@ -53,4 +53,6 @@ abstract class CheckinRepository {
   });
 
   Future<void> deleteMedia(String mediaId);
+
+  Future<List<CheckinEntity>> listCheckins(String tripId);
 }

@@ -86,15 +86,13 @@ func (h *Handler) search(w http.ResponseWriter, r *http.Request) {
 		httpx.ErrUnauthorized(w)
 		return
 	}
-	_ = userID
-
 	q := r.URL.Query().Get("q")
 	if q == "" {
 		httpx.WriteJSON(w, http.StatusOK, SearchResponse{Users: []PublicProfileResponse{}})
 		return
 	}
 
-	users, err := h.svc.SearchByHandle(r.Context(), q)
+	users, err := h.svc.SearchByHandle(r.Context(), q, userID)
 	if err != nil {
 		h.log.ErrorContext(r.Context(), "search", "error", err)
 		httpx.ErrInternal(w)

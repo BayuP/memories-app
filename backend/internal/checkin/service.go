@@ -202,6 +202,23 @@ func (s *Service) UpsertRecommendation(ctx context.Context, checkinID, callerID 
 	}, nil
 }
 
+// ListCheckins returns all check-ins for a trip (caller must be a member).
+func (s *Service) ListCheckins(ctx context.Context, tripID, callerID uuid.UUID) ([]CheckinResponse, error) {
+	if err := s.checkMember(ctx, tripID, callerID); err != nil {
+		return nil, err
+	}
+	checkins, err := s.repo.ListByTripID(ctx, tripID)
+	if err != nil {
+		return nil, fmt.Errorf("list checkins: %w", err)
+	}
+	out := make([]CheckinResponse, len(checkins))
+	for i, c := range checkins {
+		mem, _ := s.repo.FindMemory(ctx, c.ID)
+		out[i] = toCheckinResponse(c, mem, nil, nil, nil)
+	}
+	return out, nil
+}
+
 func (s *Service) findAndCheckMember(ctx context.Context, checkinID, callerID uuid.UUID) (*Checkin, error) {
 	c, err := s.repo.FindByID(ctx, checkinID)
 	if err != nil {

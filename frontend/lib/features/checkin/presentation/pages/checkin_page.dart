@@ -71,6 +71,50 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
   int _recRating = 0;
 
   bool _isSaving = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isCreateMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadExisting());
+    }
+  }
+
+  Future<void> _loadExisting() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final repo = ref.read(checkinRepositoryProvider);
+      final checkin = await repo.getCheckin(widget.checkinId!);
+      if (!mounted) return;
+      setState(() {
+        _capturedAt = checkin.capturedAt;
+        if (checkin.memory != null) {
+          _memoryNoteController.text = checkin.memory!.note ?? '';
+          _selectedMood = checkin.memory!.mood;
+        }
+        if (checkin.logistics != null) {
+          _logisticsCostController.text =
+              checkin.logistics!.cost?.toString() ?? '';
+          _logisticsCurrencyController.text =
+              checkin.logistics!.currency ?? 'USD';
+          _logisticsNotesController.text = checkin.logistics!.notes ?? '';
+        }
+        if (checkin.recommendation != null) {
+          _recTitleController.text = checkin.recommendation!.title ?? '';
+          _recBodyController.text = checkin.recommendation!.body ?? '';
+          _recTagsController.text =
+              checkin.recommendation!.tags.join(', ');
+          _recRating = checkin.recommendation!.rating ?? 0;
+        }
+      });
+    } catch (_) {
+      // ignore load errors — page still usable
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -128,7 +172,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             Text(
               pageTitle,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.text,
               ),
@@ -143,7 +187,11 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           ],
         ),
       ),
-      body: Column(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                  color: AppColors.accentGreen, strokeWidth: 2))
+          : Column(
         children: [
           Expanded(
             child: SingleChildScrollView(
@@ -166,11 +214,12 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
               ),
             ),
           ),
-          _buildSaveButton(context),
+          _buildSaveButton(context, isSpont),
         ],
       ),
     );
   }
+
 
   // ---------------------------------------------------------------------------
   // Media section
@@ -353,8 +402,8 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: TextField(
         controller: _memoryNoteController,
-        minLines: 2,
-        maxLines: 4,
+        minLines: 1,
+        maxLines: 2,
         decoration: const InputDecoration(
           hintText: "what's the moment?",
           border: InputBorder.none,
@@ -363,8 +412,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           filled: false,
         ),
         style: const TextStyle(
-          fontSize: 14,
+          fontSize: 20,
           color: AppColors.text,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -712,7 +762,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
   // Save button
   // ---------------------------------------------------------------------------
 
-  Widget _buildSaveButton(BuildContext context) {
+  Widget _buildSaveButton(BuildContext context, bool isSpont) {
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -741,7 +791,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                   ),
                 )
               : Text(
-                  widget.isCreateMode ? 'check in' : 'save changes',
+                  widget.isCreateMode
+                      ? (isSpont ? 'save moment' : 'check in')
+                      : 'save changes',
                 ),
         ),
       ),
@@ -764,7 +816,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             duration: Duration(seconds: 2),
           ),
         );
-        context.pop();
+        context.pop(true);
       }
       if (mounted) setState(() => _isSaving = false);
       return;
@@ -854,7 +906,13 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       }
 
       if (mounted) {
-        context.pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('moment saved'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        context.pop(true);
       }
     } catch (e) {
       if (mounted) {

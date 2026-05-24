@@ -27,12 +27,14 @@ type Trip struct {
 	UpdatedAt   time.Time
 }
 
-// Member is a user–trip membership record.
+// Member is a user–trip membership record, joined with the user's profile.
 type Member struct {
-	ID        uuid.UUID
-	TripID    uuid.UUID
-	UserID    uuid.UUID
-	Role      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          uuid.UUID
+	TripID      uuid.UUID
+	UserID      uuid.UUID
+	Role        string
+	Handle      string
+	DisplayName string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }

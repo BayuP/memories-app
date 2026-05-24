@@ -89,6 +89,13 @@ class ItineraryItemsNotifier
     );
   }
 
+  Future<void> createItem(Map<String, dynamic> body) async {
+    final created =
+        await ref.read(tripsRepositoryProvider).createItem(arg, body);
+    final current = state.value ?? [];
+    state = AsyncData([...current, created]);
+  }
+
   Future<void> deleteItem(String itemId) async {
     await ref.read(tripsRepositoryProvider).deleteItem(arg, itemId);
     final current = state.value ?? [];

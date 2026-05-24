@@ -111,6 +111,7 @@ class PublicTripModel {
     final t = detail.trip;
     final tripModel = TripModel(
       id: t.id,
+      ownerId: t.ownerId,
       title: t.title,
       destination: t.destination,
       startDate: t.startDate,

@@ -128,9 +128,13 @@ func (r *postgresRepository) DeleteTrip(ctx context.Context, id uuid.UUID) error
 
 func (r *postgresRepository) AddMember(ctx context.Context, tripID, userID uuid.UUID, role string) (*Member, error) {
 	row := r.db.QueryRow(ctx,
-		`INSERT INTO trip_members (trip_id, user_id, role)
-		 VALUES ($1, $2, $3)
-		 RETURNING id, trip_id, user_id, role, created_at, updated_at`,
+		`WITH ins AS (
+			INSERT INTO trip_members (trip_id, user_id, role)
+			VALUES ($1, $2, $3)
+			RETURNING id, trip_id, user_id, role, created_at, updated_at
+		 )
+		 SELECT ins.id, ins.trip_id, ins.user_id, ins.role, ins.created_at, ins.updated_at, u.handle, u.display_name
+		 FROM ins JOIN users u ON u.id = ins.user_id`,
 		tripID, userID, role,
 	)
 	return scanMember(row)
@@ -138,8 +142,9 @@ func (r *postgresRepository) AddMember(ctx context.Context, tripID, userID uuid.
 
 func (r *postgresRepository) FindMember(ctx context.Context, tripID, userID uuid.UUID) (*Member, error) {
 	row := r.db.QueryRow(ctx,
-		`SELECT id, trip_id, user_id, role, created_at, updated_at
-		 FROM trip_members WHERE trip_id = $1 AND user_id = $2`,
+		`SELECT `+memberCols+`
+		 FROM trip_members tm JOIN users u ON u.id = tm.user_id
+		 WHERE tm.trip_id = $1 AND tm.user_id = $2`,
 		tripID, userID,
 	)
 	m, err := scanMember(row)
@@ -151,8 +156,9 @@ func (r *postgresRepository) FindMember(ctx context.Context, tripID, userID uuid
 
 func (r *postgresRepository) ListMembers(ctx context.Context, tripID uuid.UUID) ([]*Member, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT id, trip_id, user_id, role, created_at, updated_at
-		 FROM trip_members WHERE trip_id = $1 ORDER BY created_at`,
+		`SELECT `+memberCols+`
+		 FROM trip_members tm JOIN users u ON u.id = tm.user_id
+		 WHERE tm.trip_id = $1 ORDER BY tm.created_at`,
 		tripID,
 	)
 	if err != nil {
@@ -221,11 +227,17 @@ func scanTrip(row rowScanner) (*Trip, error) {
 
 func scanMember(row rowScanner) (*Member, error) {
 	m := &Member{}
-	if err := row.Scan(&m.ID, &m.TripID, &m.UserID, &m.Role, &m.CreatedAt, &m.UpdatedAt); err != nil {
+	if err := row.Scan(
+		&m.ID, &m.TripID, &m.UserID, &m.Role, &m.CreatedAt, &m.UpdatedAt,
+		&m.Handle, &m.DisplayName,
+	); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
+
+// memberCols are the trip_members + joined user columns, in scanMember order.
+const memberCols = `tm.id, tm.trip_id, tm.user_id, tm.role, tm.created_at, tm.updated_at, u.handle, u.display_name`
 
 // tripCols prefixes all trip column names with the given alias.
 func tripCols(alias string) string {

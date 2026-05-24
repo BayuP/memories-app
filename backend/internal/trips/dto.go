@@ -44,13 +44,16 @@ type TripDetailResponse struct {
 	Members []MemberResponse `json:"members"`
 }
 
-// MemberResponse represents a trip membership record.
+// MemberResponse represents a trip membership record with the user's profile.
 type MemberResponse struct {
-	ID        string `json:"id"`
-	TripID    string `json:"trip_id"`
-	UserID    string `json:"user_id"`
-	Role      string `json:"role"`
-	CreatedAt string `json:"created_at"`
+	ID          string `json:"id"`
+	TripID      string `json:"trip_id"`
+	UserID      string `json:"user_id"`
+	Role        string `json:"role"`
+	Handle      string `json:"handle"`
+	DisplayName string `json:"display_name"`
+	CreatedAt   string `json:"created_at"`
+	JoinedAt    string `json:"joined_at"`
 }
 
 func toTripResponse(t *Trip) TripResponse {
@@ -79,12 +82,16 @@ func toTripResponse(t *Trip) TripResponse {
 }
 
 func toMemberResponse(m *Member) MemberResponse {
+	ts := m.CreatedAt.Format("2006-01-02T15:04:05Z07:00")
 	return MemberResponse{
-		ID:        m.ID.String(),
-		TripID:    m.TripID.String(),
-		UserID:    m.UserID.String(),
-		Role:      m.Role,
-		CreatedAt: m.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:          m.ID.String(),
+		TripID:      m.TripID.String(),
+		UserID:      m.UserID.String(),
+		Role:        m.Role,
+		Handle:      m.Handle,
+		DisplayName: m.DisplayName,
+		CreatedAt:   ts,
+		JoinedAt:    ts,
 	}
 }
 
