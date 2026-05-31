@@ -275,7 +275,7 @@ class CheckinRemoteDataSource {
   }
 
   Future<List<CheckinModel>> listCheckins(String tripId) async {
-    if (kDemoMode) {
+    if (_demoMode) {
       await Future.delayed(const Duration(milliseconds: 300));
       return [];
     }

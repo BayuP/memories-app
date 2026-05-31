@@ -50,6 +50,14 @@ abstract final class AppColors {
   static const Color badgeOngoing = Color(0xFFE4EDE5);  // muted warm green tint
   static const Color badgeUpcoming = Color(0xFFF0EDE8); // surface elevated
   static const Color badgePast = Color(0xFFEBE8E3);     // warm light gray
+
+  // Semantic state tokens (timeline / cards) — single source for "now"/"info"/"done".
+  static const Color nowBg = Color(0xFFF5E9CF);    // amber tint — "now" / current
+  static const Color nowText = Color(0xFF9A6C1A);  // ochre text
+  static const Color infoBg = Color(0xFFE4EAF5);   // cool tint — "upcoming" / shared
+  static const Color infoText = Color(0xFF5B7AAA); // muted blue text
+  static const Color doneBg = Color(0xFFE4EDE5);   // green tint — "done"
+  static const Color doneText = Color(0xFF4E6B53); // green text
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -57,6 +65,7 @@ abstract final class AppColors {
 // ─────────────────────────────────────────────────────────────────────────────
 
 abstract final class AppSpacing {
+  static const double xxs = 2;
   static const double xs = 4;
   static const double sm = 8;
   static const double md = 16;
@@ -230,6 +239,22 @@ abstract final class AppTextStyles {
         color: AppColors.onPrimary,
         letterSpacing: 0.1,
       );
+
+  // AppBar title — Playfair Display, editorial voice shared by every screen.
+  static TextStyle get appBarTitle => GoogleFonts.playfairDisplay(
+        fontSize: 19,
+        fontWeight: FontWeight.w600,
+        color: AppColors.text,
+        height: 1.2,
+      );
+
+  // AppBar subtitle — Inter, muted metadata line under the title.
+  static TextStyle get appBarSubtitle => GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textMuted,
+        height: 1.3,
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -288,17 +313,24 @@ abstract final class AppTheme {
         labelMedium: AppTextStyles.labelMedium,
         labelSmall: AppTextStyles.labelSmall,
       ),
+      // Force single line-height on day-grid text. The custom textTheme uses
+      // height: 1.5 on body styles, which overflows the picker's fixed day
+      // cells and clips week rows. Colors/shape stay driven by colorScheme.
+      datePickerTheme: DatePickerThemeData(
+        dayStyle: AppTextStyles.bodyMedium.copyWith(height: 1.0),
+        weekdayStyle: AppTextStyles.labelSmall.copyWith(height: 1.0),
+        yearStyle: AppTextStyles.bodyLarge.copyWith(height: 1.0),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: AppColors.text,
-        ),
+        titleTextStyle: AppTextStyles.appBarTitle,
         iconTheme: const IconThemeData(color: AppColors.text),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.accentGreen,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

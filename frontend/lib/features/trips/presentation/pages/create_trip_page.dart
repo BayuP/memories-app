@@ -50,11 +50,11 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
   String? _endDateError;
 
   static const _vibes = [
-    'adventure',
-    'relaxed',
-    'foodie',
-    'culture',
-    'budget',
+    'Adventure',
+    'Relaxed',
+    'Foodie',
+    'Culture',
+    'Budget',
   ];
 
   @override
@@ -75,17 +75,17 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
 
   bool _validateStep1() {
     String? titleErr = _titleController.text.trim().isEmpty
-        ? 'trip name is required'
+        ? 'Trip name is required'
         : null;
     String? destErr = _destinationController.text.trim().isEmpty
-        ? 'destination is required'
+        ? 'Destination is required'
         : null;
-    String? startErr = _startDate == null ? 'required' : null;
-    String? endErr = _endDate == null ? 'required' : null;
+    String? startErr = _startDate == null ? 'Required' : null;
+    String? endErr = _endDate == null ? 'Required' : null;
 
     if (startErr == null && endErr == null && _endDate!.isBefore(_startDate!)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('end date must be after start date')),
+        const SnackBar(content: Text('End date must be after start date')),
       );
       return false;
     }
@@ -182,7 +182,7 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
       if (!mounted) return;
       setState(() => _isCreating = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('error: ${e.toString()}')),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
     }
   }
@@ -234,7 +234,7 @@ class _CreateTripPageState extends ConsumerState<CreateTripPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('error: ${e.toString()}')),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
       setState(() => _step = 1);
     }
@@ -291,14 +291,19 @@ class _Step1Widget extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.white,
         leading: const BackButton(),
-        title: const Text('new trip'),
+        title: const Text('New trip'),
       ),
       body: Column(
         children: [
           const _ProgressBar(step: 1, total: 3),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.lg,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -319,18 +324,17 @@ class _Step1Widget extends StatelessWidget {
                       clipBehavior: Clip.antiAlias,
                       child: coverImage != null
                           ? Image.file(coverImage!, fit: BoxFit.cover)
-                          : const Center(
+                          : Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.camera_alt_outlined,
+                                  const Icon(Icons.camera_alt_outlined,
                                       size: 22, color: AppColors.textMuted),
-                                  SizedBox(height: 4),
+                                  const SizedBox(height: AppSpacing.xs),
                                   Text(
-                                    'add cover photo',
-                                    style: TextStyle(
+                                    'Add cover photo',
+                                    style: AppTextStyles.caption.copyWith(
                                       color: AppColors.textMuted,
-                                      fontSize: 11,
                                     ),
                                   ),
                                 ],
@@ -340,19 +344,19 @@ class _Step1Widget extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   _LabeledField(
-                    label: 'TRIP NAME',
+                    label: 'Trip name',
                     child: TextFormField(
                       controller: titleController,
                       style: AppTextStyles.bodyMedium,
                       decoration: InputDecoration(
-                        hintText: 'summer escape',
+                        hintText: 'Summer escape',
                         errorText: titleError,
                       ),
                     ),
                   ),
                   const SizedBox(height: 14),
                   _LabeledField(
-                    label: 'DESTINATION',
+                    label: 'Destination',
                     child: _DestinationField(
                       controller: destinationController,
                       errorText: destinationError,
@@ -364,10 +368,10 @@ class _Step1Widget extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _LabeledField(
-                          label: 'START DATE',
+                          label: 'Start date',
                           child: _DatePickerButton(
                             value: startDate,
-                            hint: 'pick date',
+                            hint: 'Pick date',
                             firstDate: DateTime.now(),
                             onChanged: onStartDateChanged,
                             errorText: startDateError,
@@ -377,10 +381,10 @@ class _Step1Widget extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _LabeledField(
-                          label: 'END DATE',
+                          label: 'End date',
                           child: _DatePickerButton(
                             value: endDate,
-                            hint: 'pick date',
+                            hint: 'Pick date',
                             firstDate: startDate ?? DateTime.now(),
                             onChanged: onEndDateChanged,
                             errorText: endDateError,
@@ -391,10 +395,10 @@ class _Step1Widget extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   _LabeledField(
-                    label: 'VIBES',
+                    label: 'Vibes',
                     child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
                       children: vibes
                           .map((v) => _VibePill(
                                 label: v,
@@ -404,7 +408,7 @@ class _Step1Widget extends StatelessWidget {
                           .toList(),
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xl),
                   ElevatedButton(
                     onPressed: isCreating ? null : onNext,
                     child: isCreating
@@ -416,7 +420,7 @@ class _Step1Widget extends StatelessWidget {
                               color: AppColors.white,
                             ),
                           )
-                        : const Text('looks good — let\'s go'),
+                        : const Text("Looks good — let's go"),
                   ),
                 ],
               ),
@@ -479,14 +483,19 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
       appBar: AppBar(
         backgroundColor: AppColors.white,
         leading: const BackButton(),
-        title: const Text('invite people'),
+        title: const Text('Invite people'),
       ),
       body: Column(
         children: [
           const _ProgressBar(step: 2, total: 3),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.lg,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -495,7 +504,7 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                     onChanged: _onSearchChanged,
                     style: AppTextStyles.bodyMedium,
                     decoration: const InputDecoration(
-                      hintText: 'search by handle or name...',
+                      hintText: 'Search by handle or name...',
                       prefixIcon: Icon(Icons.search,
                           size: 18, color: AppColors.textMuted),
                       prefixIconConstraints:
@@ -505,14 +514,11 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                   const SizedBox(height: 20),
                   if (widget.addedUsers.isNotEmpty) ...[
                     Text(
-                      'ADDED',
-                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)
-                          .copyWith(
-                        letterSpacing: 0.8,
-                        fontSize: 10,
-                      ),
+                      'Added',
+                      style: AppTextStyles.labelSmall
+                          .copyWith(color: AppColors.textMuted),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     ...widget.addedUsers.map(
                       (u) => _UserRow(
                         user: u,
@@ -521,7 +527,7 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                           children: [
                             const Icon(Icons.check,
                                 size: 14, color: AppColors.accentGreen),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: AppSpacing.xs),
                             GestureDetector(
                               onTap: () => widget.onUserRemoved(u),
                               child: const Icon(Icons.close,
@@ -535,28 +541,25 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                   ],
                   if (_query.isNotEmpty) ...[
                     Text(
-                      'RESULTS',
-                      style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)
-                          .copyWith(
-                        letterSpacing: 0.8,
-                        fontSize: 10,
-                      ),
+                      'Results',
+                      style: AppTextStyles.labelSmall
+                          .copyWith(color: AppColors.textMuted),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     searchAsync.when(
                       loading: () => const Center(
                         child: Padding(
-                          padding: EdgeInsets.all(16),
+                          padding: EdgeInsets.all(AppSpacing.md),
                           child: CircularProgressIndicator(
                             color: AppColors.accentGreen,
                             strokeWidth: 2,
                           ),
                         ),
                       ),
-                      error: (_, __) => const Text(
-                        'search failed',
-                        style: TextStyle(
-                            color: AppColors.coral, fontSize: 12),
+                      error: (_, __) => Text(
+                        'Search failed',
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.coral),
                       ),
                       data: (users) {
                         final currentUserId =
@@ -567,10 +570,10 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                                 u.id != currentUserId)
                             .toList();
                         if (filtered.isEmpty) {
-                          return const Text(
-                            'no users found',
-                            style: TextStyle(
-                                color: AppColors.textMuted, fontSize: 12),
+                          return Text(
+                            'No users found',
+                            style: AppTextStyles.bodySmall
+                                .copyWith(color: AppColors.textMuted),
                           );
                         }
                         return Column(
@@ -582,7 +585,7 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                                     onTap: () => widget.onUserAdded(u),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 4),
+                                          horizontal: 10, vertical: AppSpacing.xs),
                                       decoration: BoxDecoration(
                                         color: AppColors.surfaceVariant,
                                         borderRadius: BorderRadius.circular(
@@ -591,12 +594,12 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                                             color: AppColors.border,
                                             width: 0.5),
                                       ),
-                                      child: const Text(
-                                        'add',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.text,
-                                            fontWeight: FontWeight.w500),
+                                      child: Text(
+                                        'Add',
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: AppColors.text,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -607,22 +610,21 @@ class _Step2WidgetState extends ConsumerState<_Step2Widget> {
                       },
                     ),
                   ],
-                  const SizedBox(height: 32),
+                  const SizedBox(height: AppSpacing.xl),
                   Text(
-                    'HOW DO YOU WANT TO BUILD IT?',
+                    'How do you want to build it?',
                     style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.textMuted)
-                        .copyWith(fontSize: 10, letterSpacing: 0.8),
+                        .copyWith(color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: widget.onBuildAi,
-                    child: const Text('✨ build with AI'),
+                    child: const Text('✨ Build with AI'),
                   ),
                   const SizedBox(height: 10),
                   OutlinedButton(
                     onPressed: widget.onBuildManual,
-                    child: const Text('add plans manually'),
+                    child: const Text('Add plans manually'),
                   ),
                 ],
               ),
@@ -663,9 +665,9 @@ class _Step3GeneratingWidgetState extends State<_Step3GeneratingWidget>
   Timer? _statusTimer;
 
   static const _statuses = [
-    'finding hidden gems...',
-    'planning your days...',
-    'adding local tips...',
+    'Finding hidden gems...',
+    'Planning your days...',
+    'Adding local tips...',
   ];
 
   @override
@@ -710,7 +712,7 @@ class _Step3GeneratingWidgetState extends State<_Step3GeneratingWidget>
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -721,15 +723,19 @@ class _Step3GeneratingWidgetState extends State<_Step3GeneratingWidget>
                     color: AppColors.amberLight,
                     shape: BoxShape.circle,
                   ),
-                  child: const Center(
-                    child: Text('✨', style: TextStyle(fontSize: 26)),
+                  child: Center(
+                    child: Text(
+                      '✨',
+                      style: AppTextStyles.displaySmall,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'building your ${widget.destination} itinerary',
-                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.text)
-                      .copyWith(fontSize: 14, fontWeight: FontWeight.w600),
+                  'Building your ${widget.destination} itinerary',
+                  style: AppTextStyles.headlineSmall.copyWith(
+                    color: AppColors.text,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
@@ -739,14 +745,14 @@ class _Step3GeneratingWidgetState extends State<_Step3GeneratingWidget>
                     style:
                         AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
                   ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.lg),
                 AnimatedBuilder(
                   animation: _progressAnimation,
                   builder: (context, _) => _ProgressIndicatorBar(
                     value: _progressAnimation.value,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
@@ -805,14 +811,17 @@ class _ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         children: List.generate(total, (i) {
           final isActive = i < step;
           return Expanded(
             child: Container(
               height: 3,
-              margin: EdgeInsets.only(right: i < total - 1 ? 4 : 0),
+              margin: EdgeInsets.only(right: i < total - 1 ? AppSpacing.xs : 0),
               decoration: BoxDecoration(
                 color: isActive ? AppColors.text : AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.full),
@@ -838,10 +847,7 @@ class _LabeledField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted).copyWith(
-            fontSize: 10,
-            letterSpacing: 0.8,
-          ),
+          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
         ),
         const SizedBox(height: 5),
         child,
@@ -908,7 +914,7 @@ class _DestinationFieldState extends State<_DestinationField> {
       if (results.isNotEmpty) _showOverlay();
     } catch (e, st) {
       // ignore: avoid_print
-      print('[DestinationField] search error: $e\n$st');
+      debugPrint('[DestinationField] search error: $e\n$st');
     }
   }
 
@@ -933,7 +939,7 @@ class _DestinationFieldState extends State<_DestinationField> {
             color: AppColors.white,
             child: ListView.builder(
               shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
               itemCount: _results.length,
               itemBuilder: (ctx, i) {
                 final raw = _results[i]['display_name'] as String? ?? '';
@@ -952,7 +958,7 @@ class _DestinationFieldState extends State<_DestinationField> {
                       children: [
                         const Icon(Icons.location_on_outlined,
                             size: 14, color: AppColors.textMuted),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
                             label,
@@ -992,7 +998,7 @@ class _DestinationFieldState extends State<_DestinationField> {
         style: AppTextStyles.bodyMedium,
         onChanged: _onChanged,
         decoration: InputDecoration(
-          hintText: 'city, country',
+          hintText: 'City, country',
           prefixIcon: const Icon(Icons.location_on_outlined,
               size: 16, color: AppColors.textMuted),
           prefixIconConstraints:
@@ -1082,13 +1088,10 @@ class _DatePickerButton extends StatelessWidget {
           ),
         ),
         if (errorText != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             errorText!,
-            style: const TextStyle(
-              color: AppColors.coral,
-              fontSize: 11,
-            ),
+            style: AppTextStyles.caption.copyWith(color: AppColors.coral),
           ),
         ],
       ],
@@ -1122,9 +1125,8 @@ class _VibePill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: AppTextStyles.bodySmall.copyWith(
             color: selected ? AppColors.white : AppColors.textMuted,
-            fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -1156,8 +1158,8 @@ class _UserRow extends StatelessWidget {
               children: [
                 Text(
                   user.displayName,
-                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.text)
-                      .copyWith(
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.text,
                     fontWeight: FontWeight.w500,
                     fontSize: 13,
                   ),

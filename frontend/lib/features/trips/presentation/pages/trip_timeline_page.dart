@@ -9,15 +9,9 @@ import 'package:memories_app/features/checkin/domain/entities/checkin_entity.dar
 import 'package:memories_app/features/checkin/presentation/providers/checkin_provider.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
-
-// ---------------------------------------------------------------------------
-// Semantic state colors (not in global palette — timeline-specific)
-// ---------------------------------------------------------------------------
-
-const _kAmberBg = Color(0xFFF5E9CF);
-const _kAmberText = Color(0xFF9A6C1A);
-const _kBlueBg = Color(0xFFE4EAF5);
-const _kBlueText = Color(0xFF5B7AAA);
+import 'package:memories_app/shared/widgets/app_bottom_nav.dart';
+import 'package:memories_app/shared/widgets/app_state_badge.dart';
+import 'package:memories_app/shared/widgets/app_states.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -83,7 +77,6 @@ class TripTimelinePage extends ConsumerStatefulWidget {
 
 class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
   int _selectedDay = 1;
-  int _navIndex = 0;
   bool _spontaneousExpanded = false;
   final _daySelectorScrollController = ScrollController();
 
@@ -196,7 +189,24 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
             ),
           ),
       body: body ?? const SizedBox.shrink(),
-      bottomNavigationBar: _buildBottomNav(context),
+      bottomNavigationBar: AppBottomNav(
+        current: AppTab.home,
+        onSelect: (tab) {
+          switch (tab) {
+            case AppTab.home:
+              context.go(AppRoutes.home);
+            case AppTab.journeys:
+              context.go(AppRoutes.home);
+            case AppTab.memories:
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Coming soon')),
+              );
+            case AppTab.profile:
+              context.push(AppRoutes.profile);
+          }
+        },
+        onAdd: () => context.push(AppRoutes.createTrip),
+      ),
     );
   }
 
@@ -240,20 +250,12 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         children: [
           Text(
             trip.title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.text,
-            ),
+            style: AppTextStyles.appBarTitle,
           ),
           if (subtitle.isNotEmpty)
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textMuted,
-              ),
+              style: AppTextStyles.appBarSubtitle,
             ),
         ],
       ),
@@ -299,7 +301,8 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.sm),
       child: Row(
         children: [
           // Stacked avatars
@@ -322,13 +325,10 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               '${members.length} ${members.length == 1 ? 'person' : 'people'} on this trip',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textMuted,
-              ),
+              style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
             ),
           ],
           const Spacer(),
@@ -351,8 +351,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
               ),
               child: Text(
                 '$doneCount of $totalCount done',
-                style: TextStyle(
-                  fontSize: 11,
+                style: AppTextStyles.labelSmall.copyWith(
                   fontWeight: FontWeight.w500,
                   color: doneCount == totalCount
                       ? AppColors.accentGreenDark
@@ -379,7 +378,8 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
       child: ListView.separated(
         controller: _daySelectorScrollController,
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
         itemCount: dayCount,
         separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
@@ -404,10 +404,8 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
               ),
               child: Text(
                 label,
-                style: TextStyle(
+                style: AppTextStyles.labelSmall.copyWith(
                   color: isSelected ? AppColors.white : AppColors.textMuted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -465,13 +463,14 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     final totalCount = items.length * 2 + 2;
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, 100),
       itemCount: totalCount,
       itemBuilder: (context, index) {
         // "add activity" button row
         if (index == items.length * 2) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
             child: GestureDetector(
               onTap: () => _showActivitySheet(trip),
               child: Container(
@@ -483,14 +482,15 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                   borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(color: AppColors.border, width: 0.5),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.add, size: 14, color: AppColors.textMuted),
-                    SizedBox(width: 6),
+                    const Icon(Icons.add, size: 14, color: AppColors.textMuted),
+                    const SizedBox(width: 6),
                     Text(
-                      'add activity',
-                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                      'Add activity',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.textMuted),
                     ),
                   ],
                 ),
@@ -562,15 +562,16 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                         ),
                         child: const Icon(
                           Icons.add,
-                          size: 10,
+                          size: 11,
                           color: AppColors.textMuted,
                         ),
                       ),
                     ),
                   ),
-                  const Text(
-                    'add activity here',
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                  Text(
+                    'Add activity here',
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.textMuted),
                   ),
                 ],
               ),
@@ -652,12 +653,12 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('delete activity?'),
-        content: Text('remove "${item.title}" from this day?'),
+        title: const Text('Delete activity?'),
+        content: Text('Remove "${item.title}" from this day?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
@@ -667,7 +668,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                   .deleteItem(item.id);
             },
             child: const Text(
-              'delete',
+              'Delete',
               style: TextStyle(color: AppColors.coral),
             ),
           ),
@@ -698,16 +699,16 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         width: 20,
         height: 20,
         decoration: BoxDecoration(
-          color: _kAmberBg,
+          color: AppColors.nowBg,
           shape: BoxShape.circle,
-          border: Border.all(color: _kAmberText, width: 1.5),
+          border: Border.all(color: AppColors.nowText, width: 1.5),
         ),
         child: Center(
           child: Container(
             width: 7,
             height: 7,
             decoration: const BoxDecoration(
-              color: _kAmberText,
+              color: AppColors.nowText,
               shape: BoxShape.circle,
             ),
           ),
@@ -772,103 +773,9 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
   // ---------------------------------------------------------------------------
 
   Widget _buildErrorState({required VoidCallback onRetry}) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, color: AppColors.coral, size: 36),
-            const SizedBox(height: 12),
-            const Text(
-              'failed to load timeline',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: onRetry,
-              child: const Text('retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Bottom nav
-  // ---------------------------------------------------------------------------
-
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            children: [
-              _NavItem(
-                icon: Icons.map_outlined,
-                activeIcon: Icons.map_rounded,
-                label: 'trips',
-                selected: _navIndex == 0,
-                onTap: () {
-                  setState(() => _navIndex = 0);
-                  context.go(AppRoutes.home);
-                },
-              ),
-              _NavItem(
-                icon: Icons.explore_outlined,
-                activeIcon: Icons.explore,
-                label: 'explore',
-                selected: _navIndex == 1,
-                onTap: () => ScaffoldMessenger.of(context)
-                    .showSnackBar(const SnackBar(content: Text('coming soon'))),
-              ),
-              // FAB center
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => context.push(AppRoutes.createTrip),
-                  child: Center(
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: AppColors.text,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.add,
-                          color: AppColors.white, size: 20),
-                    ),
-                  ),
-                ),
-              ),
-              _NavItem(
-                icon: Icons.notifications_outlined,
-                activeIcon: Icons.notifications,
-                label: 'activity',
-                selected: _navIndex == 3,
-                onTap: () => setState(() => _navIndex = 3),
-              ),
-              _NavItem(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                label: 'profile',
-                selected: _navIndex == 4,
-                onTap: () => setState(() => _navIndex = 4),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return AppErrorState(
+      message: 'Failed to load timeline',
+      onRetry: onRetry,
     );
   }
 }
@@ -1011,13 +918,12 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Sheet title
               Text(
-                _isEditMode ? 'edit activity' : 'add activity',
-                style: const TextStyle(
-                  fontSize: 14,
+                _isEditMode ? 'Edit activity' : 'Add activity',
+                style: AppTextStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.text,
                 ),
@@ -1031,10 +937,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                 controller: _nameController,
                 autofocus: !_isEditMode,
                 textCapitalization: TextCapitalization.none,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.text,
-                ),
+                style: AppTextStyles.labelMedium.copyWith(color: AppColors.text),
                 decoration: _inputDecoration('activity name'),
                 onChanged: (_) => setState(() {}),
               ),
@@ -1046,10 +949,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
               TextFormField(
                 controller: _locationController,
                 textCapitalization: TextCapitalization.none,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.text,
-                ),
+                style: AppTextStyles.labelMedium.copyWith(color: AppColors.text),
                 decoration: _inputDecoration('location (optional)'),
               ),
               const SizedBox(height: 14),
@@ -1073,13 +973,12 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                     children: [
                       const Icon(Icons.schedule_outlined,
                           size: 14, color: AppColors.textMuted),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(
                         _startTime != null
                             ? _formattedTime
                             : 'tap to set time',
-                        style: TextStyle(
-                          fontSize: 13,
+                        style: AppTextStyles.labelMedium.copyWith(
                           color: _startTime != null
                               ? AppColors.text
                               : AppColors.textMuted,
@@ -1096,7 +995,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
 
               // Save button
               GestureDetector(
@@ -1122,9 +1021,8 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
                               ),
                             )
                           : Text(
-                              _isEditMode ? 'save changes' : 'add activity',
-                              style: const TextStyle(
-                                fontSize: 13,
+                              _isEditMode ? 'save changes' : 'Add activity',
+                              style: AppTextStyles.labelMedium.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.white,
                               ),
@@ -1143,10 +1041,7 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(
-        fontSize: 13,
-        color: AppColors.textMuted,
-      ),
+      hintStyle: AppTextStyles.labelMedium.copyWith(color: AppColors.textMuted),
       filled: true,
       fillColor: AppColors.surfaceVariant,
       contentPadding:
@@ -1176,8 +1071,7 @@ class _SheetLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 11,
+      style: AppTextStyles.labelSmall.copyWith(
         fontWeight: FontWeight.w500,
         color: AppColors.textMuted,
       ),
@@ -1220,15 +1114,12 @@ class _DoneCard extends StatelessWidget {
                 if (item.startTime != null)
                   Text(
                     _fmtTime(item.startTime!),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.accentGreen,
-                    ),
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.accentGreen),
                   ),
                 Text(
                   item.title,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.labelMedium.copyWith(
                     fontWeight: FontWeight.w500,
                     color: AppColors.accentGreenDark,
                   ),
@@ -1238,34 +1129,30 @@ class _DoneCard extends StatelessWidget {
                   Row(
                     children: [
                       const Icon(Icons.location_on_outlined,
-                          size: 10, color: AppColors.accentGreen),
+                          size: 11, color: AppColors.accentGreen),
                       const SizedBox(width: 3),
                       Flexible(
                         child: Text(
                           item.locationName!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.accentGreen,
-                          ),
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.accentGreen),
                         ),
                       ),
                     ],
                   ),
                 ],
                 const SizedBox(height: 5),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.photo_camera_outlined,
+                    const Icon(Icons.photo_camera_outlined,
                         size: 11, color: AppColors.accentGreen),
-                    SizedBox(width: 4),
+                    const SizedBox(width: AppSpacing.xs),
                     Text(
                       '0 photos',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.accentGreen,
-                      ),
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.accentGreen),
                     ),
                   ],
                 ),
@@ -1291,10 +1178,8 @@ class _DoneCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              const _StateBadge(
-                label: 'done',
-                bg: AppColors.accentGreenLight,
-                textColor: AppColors.accentGreenDark,
+              const AppStateBadge(
+                state: AppBadgeState.done,
                 icon: Icons.check_circle_outline,
               ),
             ],
@@ -1345,15 +1230,12 @@ class _NowCard extends StatelessWidget {
                     if (item.startTime != null)
                       Text(
                         _fmtTime(item.startTime!),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted,
-                        ),
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textMuted),
                       ),
                     Text(
                       item.title,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: AppTextStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.w500,
                         color: AppColors.text,
                       ),
@@ -1365,15 +1247,14 @@ class _NowCard extends StatelessWidget {
                         item.description!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: AppTextStyles.caption.copyWith(
                           color: AppColors.textMuted,
                           height: 1.4,
                         ),
                       ),
                     ],
                     if (item.locationName != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
                           const Icon(Icons.location_on_outlined,
@@ -1384,10 +1265,8 @@ class _NowCard extends StatelessWidget {
                               item.locationName!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textMuted,
-                              ),
+                              style: AppTextStyles.caption
+                                  .copyWith(color: AppColors.textMuted),
                             ),
                           ),
                         ],
@@ -1396,7 +1275,7 @@ class _NowCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               // Action icons + now badge
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -1416,36 +1295,31 @@ class _NowCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const _StateBadge(
-                    label: 'now',
-                    bg: _kAmberBg,
-                    textColor: _kAmberText,
-                  ),
+                  const AppStateBadge(state: AppBadgeState.now),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 10),
-          // CTA button
+          // CTA button — 44dp touch target
           GestureDetector(
             onTap: onCheckin,
             child: Container(
-              height: 36,
+              height: 44,
               decoration: BoxDecoration(
                 color: AppColors.text,
                 borderRadius: BorderRadius.circular(AppRadius.card),
               ),
-              child: const Center(
+              child: Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.camera_alt_outlined,
+                    const Icon(Icons.camera_alt_outlined,
                         size: 14, color: AppColors.white),
-                    SizedBox(width: 6),
+                    const SizedBox(width: 6),
                     Text(
-                      'check in here',
-                      style: TextStyle(
-                        fontSize: 12,
+                      'Check in here',
+                      style: AppTextStyles.bodySmall.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.white,
                         letterSpacing: 0.1,
@@ -1501,7 +1375,7 @@ class _SpontaneousGroup extends StatelessWidget {
                     height: 26,
                     decoration: BoxDecoration(
                       color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(7),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       border: Border.all(color: AppColors.border, width: 0.5),
                     ),
                     child: const Icon(Icons.bolt_outlined,
@@ -1514,10 +1388,9 @@ class _SpontaneousGroup extends StatelessWidget {
                       children: [
                         Text(
                           checkins.isEmpty
-                              ? 'spontaneous moments'
+                              ? 'Spontaneous moments'
                               : '${checkins.length} spontaneous moment${checkins.length == 1 ? '' : 's'}',
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: AppTextStyles.bodySmall.copyWith(
                             fontWeight: checkins.isNotEmpty
                                 ? FontWeight.w500
                                 : FontWeight.w400,
@@ -1529,12 +1402,10 @@ class _SpontaneousGroup extends StatelessWidget {
                         const SizedBox(height: 1),
                         Text(
                           checkins.isEmpty
-                              ? 'log something unplanned'
-                              : expanded ? 'tap to collapse' : 'tap to expand',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textMuted,
-                          ),
+                              ? 'Log something unplanned'
+                              : expanded ? 'Tap to collapse' : 'Tap to expand',
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.textMuted),
                         ),
                       ],
                     ),
@@ -1557,7 +1428,7 @@ class _SpontaneousGroup extends StatelessWidget {
           curve: Curves.easeInOut,
           child: expanded
               ? Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
                   child: Column(
                     children: [
                       ...checkins.map((c) => Padding(
@@ -1580,18 +1451,16 @@ class _SpontaneousGroup extends StatelessWidget {
                             border: Border.all(
                                 color: AppColors.border, width: 0.5),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.add,
+                              const Icon(Icons.add,
                                   size: 13, color: AppColors.textMuted),
-                              SizedBox(width: 8),
+                              const SizedBox(width: AppSpacing.sm),
                               Text(
-                                'log another moment',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textMuted,
-                                ),
+                                'Log another moment',
+                                style: AppTextStyles.caption
+                                    .copyWith(color: AppColors.textMuted),
                               ),
                             ],
                           ),
@@ -1618,16 +1487,14 @@ class _SpontaneousGroup extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.card),
                   border: Border.all(color: AppColors.border, width: 0.5),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.add, size: 13, color: AppColors.textMuted),
-                    SizedBox(width: 8),
+                    const Icon(Icons.add, size: 13, color: AppColors.textMuted),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
-                      'something unplanned happened?',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textMuted,
-                      ),
+                      'Something unplanned happened?',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.textMuted),
                     ),
                   ],
                 ),
@@ -1678,17 +1545,14 @@ class _SpontaneousCheckinCard extends StatelessWidget {
                 children: [
                   Text(
                     timeStr,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.accentGreen,
-                    ),
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.accentGreen),
                   ),
                   Text(
                     note != null && note.isNotEmpty ? note : 'spontaneous moment',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.labelMedium.copyWith(
                       fontWeight: FontWeight.w500,
                       color: AppColors.accentGreenDark,
                     ),
@@ -1755,15 +1619,12 @@ class _UpcomingCard extends StatelessWidget {
                 if (item.startTime != null)
                   Text(
                     _fmtTime(item.startTime!),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textMuted,
-                    ),
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.textMuted),
                   ),
                 Text(
                   item.title,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.labelMedium.copyWith(
                     fontWeight: FontWeight.w500,
                     color: AppColors.textSecondary,
                   ),
@@ -1773,17 +1634,15 @@ class _UpcomingCard extends StatelessWidget {
                   Row(
                     children: [
                       const Icon(Icons.location_on_outlined,
-                          size: 10, color: AppColors.textMuted),
+                          size: 11, color: AppColors.textMuted),
                       const SizedBox(width: 3),
                       Flexible(
                         child: Text(
                           item.locationName!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textMuted,
-                          ),
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.textMuted),
                         ),
                       ),
                     ],
@@ -1811,11 +1670,7 @@ class _UpcomingCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              const _StateBadge(
-                label: 'upcoming',
-                bg: _kBlueBg,
-                textColor: _kBlueText,
-              ),
+              const AppStateBadge(state: AppBadgeState.upcoming),
             ],
           ),
         ],
@@ -1825,7 +1680,7 @@ class _UpcomingCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Card icon button (edit / delete)
+// Card icon button (edit / delete) — 40dp touch target
 // ---------------------------------------------------------------------------
 
 class _CardIconButton extends StatelessWidget {
@@ -1839,55 +1694,12 @@ class _CardIconButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Icon(icon, size: 14, color: AppColors.textMuted),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// State badge pill
-// ---------------------------------------------------------------------------
-
-class _StateBadge extends StatelessWidget {
-  const _StateBadge({
-    required this.label,
-    required this.bg,
-    required this.textColor,
-    this.icon,
-  });
-
-  final String label;
-  final Color bg;
-  final Color textColor;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 10, color: textColor),
-            const SizedBox(width: 3),
-          ],
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              color: textColor,
-            ),
-          ),
-        ],
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: Icon(icon, size: 14, color: AppColors.textMuted),
+        ),
       ),
     );
   }
@@ -2063,52 +1875,6 @@ class _AvatarCircle extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: AppColors.accentGreenDark,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Nav item
-// ---------------------------------------------------------------------------
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? AppColors.text : AppColors.textMuted;
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(selected ? activeIcon : icon, color: color, size: 20),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
         ),
       ),
     );

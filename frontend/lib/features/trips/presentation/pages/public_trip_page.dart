@@ -34,7 +34,7 @@ class PublicTripPage extends ConsumerWidget {
         backgroundColor: AppColors.bg,
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -42,9 +42,9 @@ class PublicTripPage extends ConsumerWidget {
                     color: AppColors.coral, size: 36),
                 const SizedBox(height: 12),
                 Text(
-                  'could not load trip',
-                  style:
-                      AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+                  'Could Not Load Trip',
+                  style: AppTextStyles.bodyMedium
+                      .copyWith(color: AppColors.textMuted),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
@@ -53,11 +53,11 @@ class PublicTripPage extends ConsumerWidget {
                   style: AppTextStyles.bodySmall,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 OutlinedButton(
                   onPressed: () =>
                       ref.invalidate(publicTripProvider(tripId)),
-                  child: const Text('retry'),
+                  child: const Text('Retry'),
                 ),
               ],
             ),
@@ -178,8 +178,8 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           SnackBar(
             content: Text(
               _trip.status == TripStatus.published
-                  ? 'trip unpublished'
-                  : 'trip published',
+                  ? 'Trip Unpublished'
+                  : 'Trip Published',
             ),
           ),
         );
@@ -187,7 +187,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('error: ${e.toString()}')),
+          SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
     } finally {
@@ -230,9 +230,9 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           // Publish button for non-published trips (owner only)
           if (isOwner && _trip.status != TripStatus.published)
             Positioned(
-              bottom: 16,
-              left: 16,
-              right: 16,
+              bottom: AppSpacing.md,
+              left: AppSpacing.md,
+              right: AppSpacing.md,
               child: SafeArea(
                 top: false,
                 child: ElevatedButton(
@@ -251,7 +251,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text('publish this trip'),
+                      : const Text('Publish This Trip'),
                 ),
               ),
             ),
@@ -277,7 +277,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           }
         },
         child: Container(
-          margin: const EdgeInsets.all(8),
+          margin: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
             color: AppColors.white.withAlpha(220),
             shape: BoxShape.circle,
@@ -302,8 +302,9 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
                     ),
                   )
                 : Text(
-                    'unpublish',
-                    style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
+                    'Unpublish',
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.textMuted),
                   ),
           ),
         IconButton(
@@ -316,7 +317,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
                       'Check out this trip: ${_trip.title}'),
             );
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('link copied')),
+              const SnackBar(content: Text('Link Copied')),
             );
           },
           visualDensity: VisualDensity.compact,
@@ -327,7 +328,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           onPressed: () {},
           visualDensity: VisualDensity.compact,
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xs),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
@@ -340,22 +341,22 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
   Widget _buildVibeBadgesRow() {
     if (_durationLabel.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, 14, AppSpacing.md, 0),
       child: Wrap(
         spacing: 6,
         runSpacing: 6,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
               color: AppColors.coralLight,
               borderRadius: BorderRadius.circular(AppRadius.full),
             ),
             child: Text(
               _durationLabel,
-              style: const TextStyle(
+              style: AppTextStyles.caption.copyWith(
                 color: AppColors.coral,
-                fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -367,25 +368,22 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
 
   Widget _buildTripHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.sm, AppSpacing.md, 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             _trip.title,
-            style: const TextStyle(
+            style: AppTextStyles.headlineSmall.copyWith(
               color: AppColors.text,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              height: 1.3,
             ),
           ),
           const SizedBox(height: 3),
           Text(
             _destinationDateLine,
-            style: const TextStyle(
+            style: AppTextStyles.caption.copyWith(
               color: AppColors.textMuted,
-              fontSize: 10,
             ),
           ),
         ],
@@ -401,7 +399,8 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
         owner.displayName.isNotEmpty ? owner.displayName[0].toUpperCase() : '?';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, 10, AppSpacing.md, 10),
       child: Row(
         children: [
           AvatarCircleWidget(
@@ -409,40 +408,37 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
             seed: owner.handle,
             size: 28,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   owner.displayName,
-                  style: const TextStyle(
+                  style: AppTextStyles.caption.copyWith(
                     color: AppColors.text,
-                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   '@${owner.handle} · ${_pub.members.length} people went',
-                  style: const TextStyle(
+                  style: AppTextStyles.caption.copyWith(
                     color: AppColors.textMuted,
-                    fontSize: 9,
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.full),
               border: Border.all(color: AppColors.border, width: 1),
             ),
-            child: const Text(
-              'follow',
-              style: TextStyle(
+            child: Text(
+              'Follow',
+              style: AppTextStyles.caption.copyWith(
                 color: AppColors.textMuted,
-                fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -467,7 +463,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           Expanded(
             child: _StatCell(
               value: '$_placesCount',
-              label: 'places',
+              label: 'Places',
             ),
           ),
           const VerticalDivider(
@@ -478,7 +474,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           Expanded(
             child: _StatCell(
               value: '$_photoCount',
-              label: 'photos',
+              label: 'Photos',
             ),
           ),
           const VerticalDivider(
@@ -489,7 +485,7 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           Expanded(
             child: _StatCell(
               value: '✶ $_spontaneousCount',
-              label: 'unplanned',
+              label: 'Unplanned',
             ),
           ),
         ],
@@ -500,10 +496,10 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
   Widget _buildDaySections() {
     if (_pub.checkinRecommendations.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Center(
           child: Text(
-            'no public memories yet',
+            'No Public Memories Yet',
             style: AppTextStyles.bodySmall,
           ),
         ),
@@ -520,12 +516,12 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
         for (final day
             in _allDaysExpanded ? days : days.take(2).toList()) ...[
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
             child: Text(
               'Day $day',
-              style: const TextStyle(
+              style: AppTextStyles.caption.copyWith(
                 color: AppColors.text,
-                fontSize: 11,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.2,
               ),
@@ -541,14 +537,14 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           }(),
           if (!_allDaysExpanded && (recsByDay[day]?.length ?? 0) > 2)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md, AppSpacing.xs, AppSpacing.md, 0),
               child: GestureDetector(
                 onTap: () => setState(() => _allDaysExpanded = true),
                 child: Text(
-                  'see all ${recsByDay[day]!.length} stops',
-                  style: const TextStyle(
+                  'See All ${recsByDay[day]!.length} Stops',
+                  style: AppTextStyles.caption.copyWith(
                     color: AppColors.accentGreen,
-                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -557,20 +553,20 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
         ],
         if (hasMoreThan2Days && !_allDaysExpanded)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xs),
             child: GestureDetector(
               onTap: () => setState(() => _allDaysExpanded = true),
               child: Row(
                 children: [
                   Text(
-                    'see all ${days.length} days',
-                    style: const TextStyle(
+                    'See All ${days.length} Days',
+                    style: AppTextStyles.caption.copyWith(
                       color: AppColors.accentGreen,
-                      fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: AppSpacing.xs),
                   const Icon(Icons.expand_more,
                       size: 16, color: AppColors.accentGreen),
                 ],
@@ -579,20 +575,20 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
           ),
         if (_allDaysExpanded && hasMoreThan2Days)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xs),
             child: GestureDetector(
               onTap: () => setState(() => _allDaysExpanded = false),
               child: Row(
                 children: [
-                  const Text(
-                    'show less',
-                    style: TextStyle(
+                  Text(
+                    'Show Less',
+                    style: AppTextStyles.caption.copyWith(
                       color: AppColors.textMuted,
-                      fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: AppSpacing.xs),
                   const Icon(Icons.expand_less,
                       size: 16, color: AppColors.textMuted),
                 ],
@@ -609,14 +605,12 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
     return Container(
       width: double.infinity,
       color: AppColors.surfaceVariant,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      margin: const EdgeInsets.only(top: 16),
-      child: const Text(
-        '🔒 logistics and private notes are never shown here',
-        style: TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 10,
-        ),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: 12),
+      margin: const EdgeInsets.only(top: AppSpacing.md),
+      child: Text(
+        '🔒 Logistics And Private Notes Are Never Shown Here',
+        style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
         textAlign: TextAlign.center,
       ),
     );
@@ -639,14 +633,14 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
               _BottomNavItem(
                 icon: Icons.map_outlined,
                 activeIcon: Icons.map_rounded,
-                label: 'trips',
+                label: 'Trips',
                 selected: false,
                 onTap: () => context.go('/home'),
               ),
               _BottomNavItem(
                 icon: Icons.explore_outlined,
                 activeIcon: Icons.explore,
-                label: 'explore',
+                label: 'Explore',
                 selected: true,
                 onTap: () {},
               ),
@@ -671,14 +665,14 @@ class _PublicTripContentState extends ConsumerState<_PublicTripContent> {
               _BottomNavItem(
                 icon: Icons.notifications_outlined,
                 activeIcon: Icons.notifications,
-                label: 'activity',
+                label: 'Activity',
                 selected: false,
                 onTap: () => context.go('/home'),
               ),
               _BottomNavItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
-                label: 'profile',
+                label: 'Profile',
                 selected: false,
                 onTap: () => context.push('/profile'),
               ),
@@ -705,18 +699,16 @@ class _StatCell extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: AppTextStyles.bodyLarge.copyWith(
               color: AppColors.text,
-              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
+            style: AppTextStyles.caption.copyWith(
               color: AppColors.textMuted,
-              fontSize: 10,
             ),
           ),
         ],
@@ -735,7 +727,8 @@ class _RecItem extends StatelessWidget {
     final hasMedia = rec.media.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, 0, AppSpacing.md, 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -779,9 +772,8 @@ class _RecItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         rec.title,
-                        style: const TextStyle(
+                        style: AppTextStyles.caption.copyWith(
                           color: AppColors.text,
-                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
@@ -796,9 +788,8 @@ class _RecItem extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     rec.body,
-                    style: const TextStyle(
+                    style: AppTextStyles.caption.copyWith(
                       color: AppColors.textMuted,
-                      fontSize: 10,
                       height: 1.4,
                     ),
                     maxLines: 2,
@@ -806,12 +797,11 @@ class _RecItem extends StatelessWidget {
                   ),
                 ],
                 if (rec.tags.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     '📍 ${rec.tags.first}',
-                    style: const TextStyle(
+                    style: AppTextStyles.caption.copyWith(
                       color: AppColors.textMuted,
-                      fontSize: 9,
                     ),
                   ),
                 ],
@@ -835,8 +825,7 @@ class _RecBadge extends StatelessWidget {
         isSpontaneous ? AppColors.coralLight : AppColors.accentGreenLight;
     final textColor =
         isSpontaneous ? AppColors.coral : AppColors.accentGreenDark;
-    final label =
-        isSpontaneous ? '✶ unplanned' : 'must visit';
+    final label = isSpontaneous ? '✶ Unplanned' : 'Must Visit';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -846,9 +835,8 @@ class _RecBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
+        style: AppTextStyles.caption.copyWith(
           color: textColor,
-          fontSize: 8,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -885,9 +873,8 @@ class _BottomNavItem extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
+              style: AppTextStyles.caption.copyWith(
                 color: color,
-                fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
             ),

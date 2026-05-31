@@ -1,5 +1,25 @@
 # Phase Status
 
+## Phase 7 — UX Polish & Frontend Restructure ✅ DONE (2026-05-31)
+
+### Frontend restructure
+- Legacy `lib/ui/screens/` + `lib/ui/widgets/` removed. Pages now live under `lib/features/*/presentation/pages/`; shared widgets under `lib/shared/widgets/` (app_bottom_nav, app_state_badge, app_states, app_trip_card, avatar_circle).
+
+### Itinerary review (`itinerary_review_page.dart`)
+- Bottom bar redesigned: **two rectangle buttons** via `_AddNextButtons` — `Add activity` (left, outlined) + `Next` (right, elevated). Used by both `_BottomSheet` (AI: chat row above buttons) and `_FinishBar` (manual).
+- App-bar `Add` removed (moved to bottom).
+- `Next` → `context.push('/trips/:id/itinerary-summary')` (full page, not a modal card). Old `_reviewAndFinish` modal-sheet recap deleted.
+- Extracted shared helpers to top-level so the summary page reuses them: `groupItemsByDay`, `dayLabelFor`, `itemEmojiFor` (alongside existing `formatTime`).
+
+### Itinerary summary page (`itinerary_summary_page.dart`, NEW)
+- Full-page recap: trip header, `N days · M plans`, day-by-day list (emoji + time + title + location).
+- Bottom: `Back to edit` (`context.pop()`) + `Confirm — let's go` (`context.go('/trips/:id/timeline')`).
+- Route added in `app_router.dart`: `/trips/:id/itinerary-summary` → `ItinerarySummaryPage(tripId)`.
+
+### Date picker
+- Added `datePickerTheme` in `app_theme.dart` (day/weekday/year text `height: 1.0`) — cosmetic tightening.
+- Investigated reported day-row "squish": NOT a real layout bug. M3 day-grid tile is hard-fixed at 48px; verified via on-simulator screenshots (real fonts, settled) the picker renders correctly. The screenshot artifact = mid-fade entrance + background form bleeding past the narrower dialog through the scrim + sim bezel.
+
 ## Phase 1 — Foundation ✅ DONE (commit 4e4e099)
 - Backend skeleton: config (caarlos0/env), slog logger, pgxpool, chi router, graceful shutdown
 - Migration 0001: 9 domain tables + refresh_tokens + extensions (citext, pgcrypto) + updated_at trigger

@@ -104,25 +104,25 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       backgroundColor: AppColors.bg,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
               _AppIcon(),
               const SizedBox(height: 20),
               Text(
-                'remember together',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+                'Remember together',
+                style: AppTextStyles.displaySmall.copyWith(color: AppColors.textMuted),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 6),
               Text(
-                'plan, capture, and keep the moments that matter',
+                'Plan, capture, and keep the moments that matter',
                 style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xl),
               _AuthCard(
                 isSignUp: _isSignUp,
                 formKey: _formKey,
@@ -143,7 +143,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                 isSignUp: _isSignUp,
                 onTap: _toggleMode,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.lg),
             ],
           ),
         ),
@@ -221,30 +221,30 @@ class _AuthCard extends StatelessWidget {
           children: [
             if (isSignUp) ...[
               _LabeledField(
-                label: 'display name',
+                label: 'Display name',
                 controller: displayNameController,
-                hint: 'your name',
+                hint: 'Your name',
                 textInputAction: TextInputAction.next,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
-                    return 'display name is required';
+                    return 'Display name is required';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 12),
               _LabeledField(
-                label: 'handle',
+                label: 'Handle',
                 controller: handleController,
                 hint: '@yourhandle',
                 textInputAction: TextInputAction.next,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
-                    return 'handle is required';
+                    return 'Handle is required';
                   }
                   final clean = v.trim().replaceFirst(RegExp(r'^@'), '');
                   if (!RegExp(r'^[a-z0-9_]{3,30}$').hasMatch(clean)) {
-                    return 'lowercase letters, numbers, underscores only (3–30 chars)';
+                    return 'Lowercase letters, numbers, underscores only (3-30 chars)';
                   }
                   return null;
                 },
@@ -252,24 +252,24 @@ class _AuthCard extends StatelessWidget {
               const SizedBox(height: 12),
             ],
             _LabeledField(
-              label: 'email',
+              label: 'Email',
               controller: emailController,
               hint: 'you@example.com',
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'email is required';
+                if (v == null || v.trim().isEmpty) return 'Email is required';
                 if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v)) {
-                  return 'enter a valid email';
+                  return 'Enter a valid email';
                 }
                 return null;
               },
             ),
             const SizedBox(height: 12),
             _LabeledField(
-              label: 'password',
+              label: 'Password',
               controller: passwordController,
-              hint: isSignUp ? 'min. 8 characters' : 'your password',
+              hint: isSignUp ? 'Min. 8 characters' : 'Your password',
               obscureText: obscurePassword,
               textInputAction: TextInputAction.done,
               suffixIcon: GestureDetector(
@@ -283,9 +283,9 @@ class _AuthCard extends StatelessWidget {
                 ),
               ),
               validator: (v) {
-                if (v == null || v.isEmpty) return 'password is required';
+                if (v == null || v.isEmpty) return 'Password is required';
                 if (isSignUp && v.length < 8) {
-                  return 'password must be at least 8 characters';
+                  return 'Password must be at least 8 characters';
                 }
                 return null;
               },
@@ -302,11 +302,11 @@ class _AuthCard extends StatelessWidget {
                         color: AppColors.white,
                       ),
                     )
-                  : Text(isSignUp ? 'create account' : 'log in'),
+                  : Text(isSignUp ? 'Create Account' : 'Log In'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _OrDivider(),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             _GoogleButton(onTap: onGoogleTap),
           ],
         ),
@@ -342,7 +342,7 @@ class _LabeledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: AppTextStyles.labelSmall),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         SizedBox(
           height: 34,
           child: TextFormField(
@@ -376,7 +376,7 @@ class _OrDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            'or',
+            'Or',
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
           ),
         ),
@@ -409,14 +409,16 @@ class _GoogleButton extends StatelessWidget {
             child: Center(
               child: Text(
                 'G',
-                style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted)
-                    .copyWith(fontSize: 10, fontWeight: FontWeight.w700),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textMuted,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Text(
-            'continue with Google',
+            'Continue with Google',
             style: AppTextStyles.button.copyWith(color: AppColors.text),
           ),
         ],
@@ -440,7 +442,7 @@ class _ToggleModeButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
@@ -448,16 +450,18 @@ class _ToggleModeButton extends StatelessWidget {
             children: [
               TextSpan(
                 text: isSignUp
-                    ? 'already have an account? '
-                    : "don't have one? ",
+                    ? 'Already have an account? '
+                    : "Don't have one? ",
               ),
               TextSpan(
-                text: isSignUp ? 'log in' : 'sign up',
-                style: AppTextStyles.bodySmall.copyWith(color: AppColors.accentGreen).copyWith(
-                  fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.underline,
-                  decorationColor: AppColors.accentGreen,
-                ),
+                text: isSignUp ? 'Log in' : 'Sign up',
+                style: AppTextStyles.bodySmall
+                    .copyWith(
+                      color: AppColors.accentGreen,
+                      fontWeight: FontWeight.w600,
+                      decoration: TextDecoration.underline,
+                      decorationColor: AppColors.accentGreen,
+                    ),
               ),
             ],
           ),

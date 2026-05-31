@@ -34,6 +34,93 @@ String? formatTime(String? raw) {
   return '${parts[0].padLeft(2, '0')}:${parts[1].padLeft(2, '0')}';
 }
 
+/// Groups items by day index, sorting each day by start time (untimed sink).
+Map<int, List<ItineraryItemEntity>> groupItemsByDay(
+    List<ItineraryItemEntity> items) {
+  final map = <int, List<ItineraryItemEntity>>{};
+  for (final item in items) {
+    map.putIfAbsent(item.day, () => []).add(item);
+  }
+  for (final dayItems in map.values) {
+    dayItems.sort((a, b) {
+      final ta = formatTime(a.startTime);
+      final tb = formatTime(b.startTime);
+      if (ta == null && tb == null) return 0;
+      if (ta == null) return 1;
+      if (tb == null) return -1;
+      return ta.compareTo(tb);
+    });
+  }
+  return map;
+}
+
+/// Human label for a day index, dated when the trip has a start date.
+String dayLabelFor(int day, TripDetailEntity? detail) {
+  if (day == 0) return 'Day 0 · Departure';
+  if (detail?.trip.startDate != null) {
+    final date = detail!.trip.startDate!.add(Duration(days: day - 1));
+    final label = DateFormat('EEE, MMM d').format(date);
+    return 'Day $day · $label';
+  }
+  return 'Day $day';
+}
+
+/// Picks an emoji for an item from its category, else by keyword heuristics.
+String itemEmojiFor(ItineraryItemEntity item) {
+  final cat = item.category?.toLowerCase();
+  if (cat != null && kItemCategories.containsKey(cat)) {
+    return kItemCategories[cat]!;
+  }
+  final t = item.title.toLowerCase();
+  final desc = (item.description ?? '').toLowerCase();
+  final combined = '$t $desc';
+
+  if (t.contains('flight') || t.contains('depart') ||
+      t.contains('arrive') || t.contains('airport') || t.contains('→')) {
+    return '✈️';
+  }
+  if (t.contains('hotel') || t.contains('hostel') || t.contains('resort') ||
+      t.contains('check-in') || t.contains('check in') ||
+      t.contains('accommodation') || t.contains('stay')) {
+    return '🏨';
+  }
+  if (t.contains('café') || t.contains('cafe') || t.contains('coffee')) {
+    return '☕';
+  }
+  if (t.contains('dinner') || t.contains('lunch') || t.contains('breakfast') ||
+      t.contains('restaurant') || t.contains('seafood') || t.contains('food') ||
+      t.contains('eat') || combined.contains('nasi') || combined.contains('duck')) {
+    return '🍽️';
+  }
+  if (t.contains('bar') || t.contains('nightlife') || t.contains('club') ||
+      t.contains('cocktail')) {
+    return '🍸';
+  }
+  if (t.contains('beach') || t.contains('surf') || t.contains('bay')) {
+    return '🏖️';
+  }
+  if (t.contains('waterfall') || t.contains('rice terrace') ||
+      t.contains('rice field') || t.contains('jungle') || t.contains('forest') ||
+      t.contains('nature') || t.contains('hike') || t.contains('trek')) {
+    return '🏞️';
+  }
+  if (t.contains('temple') || t.contains('museum') || t.contains('palace') ||
+      t.contains('monument') || t.contains('sacred') || t.contains('pura')) {
+    return '🏛️';
+  }
+  if (t.contains('market') || t.contains('shopping') || t.contains('mall')) {
+    return '🛍️';
+  }
+  if (t.contains('atv') || t.contains('scooter') || t.contains('motorbike') ||
+      t.contains('ride') || t.contains('bike') || t.contains('motor')) {
+    return '🏍️';
+  }
+  if (t.contains('spa') || t.contains('massage') || t.contains('wellness')) {
+    return '💆';
+  }
+  return '⭐';
+}
+
 class ItineraryReviewPage extends ConsumerStatefulWidget {
   const ItineraryReviewPage({
     super.key,
@@ -62,94 +149,6 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
   void dispose() {
     _chatController.dispose();
     super.dispose();
-  }
-
-  Map<int, List<ItineraryItemEntity>> _groupByDay(
-      List<ItineraryItemEntity> items) {
-    final map = <int, List<ItineraryItemEntity>>{};
-    for (final item in items) {
-      map.putIfAbsent(item.day, () => []).add(item);
-    }
-    // Re-arrange each day by start time so a newly added earlier activity
-    // slots into the right place. Items without a time sink to the bottom.
-    for (final dayItems in map.values) {
-      dayItems.sort((a, b) {
-        final ta = formatTime(a.startTime);
-        final tb = formatTime(b.startTime);
-        if (ta == null && tb == null) return 0;
-        if (ta == null) return 1;
-        if (tb == null) return -1;
-        return ta.compareTo(tb);
-      });
-    }
-    return map;
-  }
-
-  String _dayLabel(int day, TripDetailEntity? detail) {
-    if (day == 0) return 'day 0 · departure';
-    if (detail?.trip.startDate != null) {
-      final date =
-          detail!.trip.startDate!.add(Duration(days: day - 1));
-      final label = DateFormat('EEE, MMM d').format(date).toLowerCase();
-      return 'day $day · $label';
-    }
-    return 'day $day';
-  }
-
-  String _itemEmoji(ItineraryItemEntity item) {
-    // Prefer the explicit category when set.
-    final cat = item.category?.toLowerCase();
-    if (cat != null && kItemCategories.containsKey(cat)) {
-      return kItemCategories[cat]!;
-    }
-    final t = item.title.toLowerCase();
-    final desc = (item.description ?? '').toLowerCase();
-    final combined = '$t $desc';
-
-    if (t.contains('flight') || t.contains('depart') ||
-        t.contains('arrive') || t.contains('airport') || t.contains('→')) {
-      return '✈️';
-    }
-    if (t.contains('hotel') || t.contains('hostel') || t.contains('resort') ||
-        t.contains('check-in') || t.contains('check in') ||
-        t.contains('accommodation') || t.contains('stay')) {
-      return '🏨';
-    }
-    if (t.contains('café') || t.contains('cafe') || t.contains('coffee')) {
-      return '☕';
-    }
-    if (t.contains('dinner') || t.contains('lunch') || t.contains('breakfast') ||
-        t.contains('restaurant') || t.contains('seafood') || t.contains('food') ||
-        t.contains('eat') || combined.contains('nasi') || combined.contains('duck')) {
-      return '🍽️';
-    }
-    if (t.contains('bar') || t.contains('nightlife') || t.contains('club') ||
-        t.contains('cocktail')) {
-      return '🍸';
-    }
-    if (t.contains('beach') || t.contains('surf') || t.contains('bay')) {
-      return '🏖️';
-    }
-    if (t.contains('waterfall') || t.contains('rice terrace') ||
-        t.contains('rice field') || t.contains('jungle') || t.contains('forest') ||
-        t.contains('nature') || t.contains('hike') || t.contains('trek')) {
-      return '🏞️';
-    }
-    if (t.contains('temple') || t.contains('museum') || t.contains('palace') ||
-        t.contains('monument') || t.contains('sacred') || t.contains('pura')) {
-      return '🏛️';
-    }
-    if (t.contains('market') || t.contains('shopping') || t.contains('mall')) {
-      return '🛍️';
-    }
-    if (t.contains('atv') || t.contains('scooter') || t.contains('motorbike') ||
-        t.contains('ride') || t.contains('bike') || t.contains('motor')) {
-      return '🏍️';
-    }
-    if (t.contains('spa') || t.contains('massage') || t.contains('wellness')) {
-      return '💆';
-    }
-    return '⭐';
   }
 
   Future<void> _sendMessage() async {
@@ -201,7 +200,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('failed to refine: ${e.toString()}')),
+        SnackBar(content: Text('Failed to refine: ${e.toString()}')),
       );
     } finally {
       if (mounted) setState(() => _sendingMessage = false);
@@ -215,7 +214,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
 
     final detail = detailAsync.value;
     final items = itemsAsync.value ?? widget.initialItems;
-    final grouped = _groupByDay(items);
+    final grouped = groupItemsByDay(items);
     final sortedDays = grouped.keys.toList()..sort();
 
     return Scaffold(
@@ -223,17 +222,8 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
       appBar: AppBar(
         backgroundColor: AppColors.white,
         leading: const BackButton(),
-        title: Text(detail?.trip.title ?? 'itinerary'),
+        title: Text(detail?.trip.title ?? 'Itinerary'),
         actions: [
-          TextButton.icon(
-            onPressed: () => _showAddSheet(detail),
-            icon: const Icon(Icons.add, size: 18, color: AppColors.text),
-            label: const Text('add',
-                style: TextStyle(
-                    color: AppColors.text,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600)),
-          ),
           IconButton(
             icon: const Icon(Icons.person_add_outlined,
                 color: AppColors.textMuted, size: 20),
@@ -247,7 +237,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
           if (detail != null)
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -255,19 +245,19 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                     children: [
                       const Icon(Icons.location_on_outlined,
                           size: 12, color: AppColors.textMuted),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xs),
                       Text(
                         detail.trip.destination,
                         style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                       ),
                       if (detail.trip.startDate != null &&
                           detail.trip.endDate != null) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           '·',
                           style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Text(
                           '${DateFormat('MMM d').format(detail.trip.startDate!)} – ${DateFormat('MMM d').format(detail.trip.endDate!)}',
                           style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
@@ -276,14 +266,14 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                     ],
                   ),
                   if (detail.trip.vibes.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Wrap(
                       spacing: 6,
                       children: detail.trip.vibes
                           .map(
                             (v) => Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
+                                  horizontal: AppSpacing.sm, vertical: 3),
                               decoration: BoxDecoration(
                                 color: AppColors.surfaceVariant,
                                 borderRadius:
@@ -312,7 +302,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                 : items.isEmpty
                     ? Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(32),
+                          padding: const EdgeInsets.all(AppSpacing.xl),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -320,7 +310,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                                   size: 32, color: AppColors.textMuted),
                               const SizedBox(height: 10),
                               Text(
-                                'no plans yet — tap + to add',
+                                'No plans yet — tap Add activity below',
                                 style: AppTextStyles.bodySmall
                                     .copyWith(color: AppColors.textMuted),
                                 textAlign: TextAlign.center,
@@ -339,21 +329,19 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.sm),
                             child: Text(
-                              _dayLabel(day, detail),
-                              style: const TextStyle(
+                              dayLabelFor(day, detail),
+                              style: AppTextStyles.headlineSmall.copyWith(
                                 color: AppColors.text,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0,
                               ),
                             ),
                           ),
                           ...dayItems.map(
                             (item) => _ItineraryItemTile(
                               item: item,
-                              emoji: _itemEmoji(item),
+                              emoji: itemEmojiFor(item),
                               onDelete: () => _confirmDelete(item),
                               onTap: () => _showEditSheet(item),
                             ),
@@ -365,16 +353,21 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
           ),
         ],
       ),
-      // AI refine + CTA when AI is enabled; manual trips get a finish-only bar.
+      // Bottom bar: Add activity (left) + Next (right). AI mode adds a refine
+      // chat row above the buttons. Next opens the full summary page.
       bottomSheet: widget.aiEnabled
           ? _BottomSheet(
               controller: _chatController,
               sending: _sendingMessage,
               onSend: _sendMessage,
-              onFinish: () => context.go('/trips/${widget.tripId}/timeline'),
+              onAdd: () => _showAddSheet(detail),
+              onNext: () =>
+                  context.push('/trips/${widget.tripId}/itinerary-summary'),
             )
           : _FinishBar(
-              onFinish: () => context.go('/trips/${widget.tripId}/timeline'),
+              onAdd: () => _showAddSheet(detail),
+              onNext: () =>
+                  context.push('/trips/${widget.tripId}/itinerary-summary'),
             ),
     );
   }
@@ -385,7 +378,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
       isScrollControlled: true,
       backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
       ),
       builder: (ctx) => _AddItemSheet(
         tripId: widget.tripId,
@@ -402,22 +395,22 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md)),
-        title: const Text('remove item?'),
+        title: const Text('Remove item?'),
         content: Text(
-          'remove "${item.title}" from the itinerary?',
+          'Remove "${item.title}" from the itinerary?',
           style: AppTextStyles.bodySmall,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('cancel'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.coral,
                 foregroundColor: AppColors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('remove'),
+            child: const Text('Remove'),
           ),
         ],
       ),
@@ -435,7 +428,7 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
       isScrollControlled: true,
       backgroundColor: AppColors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
       ),
       builder: (ctx) => _EditItemSheet(
         item: item,
@@ -481,19 +474,20 @@ class _ItineraryItemTile extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Icon(Icons.drag_handle,
                   color: AppColors.border, size: 16),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: AppColors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(color: AppColors.border, width: 0.5),
                   ),
                   child: Row(
@@ -505,13 +499,13 @@ class _ItineraryItemTile extends StatelessWidget {
                         height: 36,
                         decoration: BoxDecoration(
                           color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(7),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                           border: Border.all(
                               color: AppColors.border, width: 0.5),
                         ),
                         child: Center(
                           child: Text(emoji,
-                              style: const TextStyle(fontSize: 18)),
+                              style: AppTextStyles.headlineSmall),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -521,38 +515,34 @@ class _ItineraryItemTile extends StatelessWidget {
                           children: [
                             Text(
                               item.title,
-                              style: const TextStyle(
+                              style: AppTextStyles.bodyMedium.copyWith(
                                 color: AppColors.text,
-                                fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             if (item.startTime != null ||
                                 item.description != null)
-                              const SizedBox(height: 2),
+                              const SizedBox(height: AppSpacing.xxs),
                             if (item.startTime != null)
                               Text(
-                                '${[formatTime(item.startTime), formatTime(item.endTime)].where((t) => t != null).join(' → ')} · tap to edit',
-                                style: const TextStyle(
+                                '${[formatTime(item.startTime), formatTime(item.endTime)].where((t) => t != null).join(' → ')} · Tap to edit',
+                                style: AppTextStyles.caption.copyWith(
                                   color: AppColors.textMuted,
-                                  fontSize: 10,
                                 ),
                               )
                             else
-                              const Text(
-                                'tap to edit',
-                                style: TextStyle(
+                              Text(
+                                'Tap to edit',
+                                style: AppTextStyles.caption.copyWith(
                                   color: AppColors.textMuted,
-                                  fontSize: 10,
                                 ),
                               ),
                             if (item.description != null &&
                                 item.description!.isNotEmpty)
                               Text(
                                 item.description!,
-                                style: const TextStyle(
+                                style: AppTextStyles.caption.copyWith(
                                   color: AppColors.textMuted,
-                                  fontSize: 10,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -583,20 +573,23 @@ class _BottomSheet extends StatelessWidget {
     required this.controller,
     required this.sending,
     required this.onSend,
-    required this.onFinish,
+    required this.onAdd,
+    required this.onNext,
   });
 
   final TextEditingController controller;
   final bool sending;
   final VoidCallback onSend;
-  final VoidCallback onFinish;
+  final VoidCallback onAdd;
+  final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+          AppSpacing.md, 12, AppSpacing.md, AppSpacing.md + bottomPadding),
       decoration: const BoxDecoration(
         color: AppColors.white,
         border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
@@ -609,9 +602,9 @@ class _BottomSheet extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
-                  style: AppTextStyles.bodyMedium.copyWith(fontSize: 13),
+                  style: AppTextStyles.bodyMedium,
                   decoration: const InputDecoration(
-                    hintText: 'ask AI to refine...',
+                    hintText: 'Ask AI to refine...',
                     isDense: true,
                     contentPadding:
                         EdgeInsets.symmetric(horizontal: 12, vertical: 9),
@@ -620,7 +613,7 @@ class _BottomSheet extends StatelessWidget {
                   onSubmitted: (_) => onSend(),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               GestureDetector(
                 onTap: sending ? null : onSend,
                 child: Container(
@@ -648,12 +641,42 @@ class _BottomSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: onFinish,
-            child: const Text("looks good — let's go"),
-          ),
+          _AddNextButtons(onAdd: onAdd, onNext: onNext),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom action buttons — Add activity (left) + Next (right)
+// ---------------------------------------------------------------------------
+
+class _AddNextButtons extends StatelessWidget {
+  const _AddNextButtons({required this.onAdd, required this.onNext});
+
+  final VoidCallback onAdd;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add activity'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: onNext,
+            child: const Text('Next'),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -767,7 +790,7 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('failed to save: ${e.toString()}')),
+        SnackBar(content: Text('Failed to save: ${e.toString()}')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -778,7 +801,8 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, 24 + bottomInset),
+      padding: EdgeInsets.fromLTRB(
+          AppSpacing.md, 20, AppSpacing.md, AppSpacing.lg + bottomInset),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -794,34 +818,33 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'edit item',
-              style: TextStyle(
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Edit item',
+              style: AppTextStyles.labelLarge.copyWith(
                 color: AppColors.text,
-                fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 16),
-            _SheetField(label: 'TITLE', controller: _titleCtrl),
+            const SizedBox(height: AppSpacing.md),
+            _SheetField(label: 'Title', controller: _titleCtrl),
             const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: _SheetPickerButton(
-                    label: 'START TIME',
+                    label: 'Start time',
                     value: _startTime != null ? _displayTime(_startTime!) : null,
-                    hint: 'pick time',
+                    hint: 'Pick time',
                     onTap: () => _pickTime(isStart: true),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _SheetPickerButton(
-                    label: 'END TIME',
+                    label: 'End time',
                     value: _endTime != null ? _displayTime(_endTime!) : null,
-                    hint: 'pick time',
+                    hint: 'Pick time',
                     onTap: () => _pickTime(isStart: false),
                   ),
                 ),
@@ -829,10 +852,8 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
             ),
             const SizedBox(height: 12),
             Text(
-              'CATEGORY',
-              style: AppTextStyles.labelSmall
-                  .copyWith(color: AppColors.textMuted)
-                  .copyWith(fontSize: 10, letterSpacing: 0.8),
+              'Category',
+              style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
             ),
             const SizedBox(height: 6),
             Wrap(
@@ -859,8 +880,7 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
                     ),
                     child: Text(
                       '${e.value} ${e.key}',
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: AppTextStyles.caption.copyWith(
                         color: selected
                             ? AppColors.white
                             : AppColors.textMuted,
@@ -873,13 +893,13 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
             ),
             const SizedBox(height: 12),
             _SheetField(
-              label: 'LOCATION',
+              label: 'Location',
               controller: _locationCtrl,
-              hint: 'place name',
+              hint: 'Place name',
             ),
             const SizedBox(height: 12),
             _SheetField(
-              label: 'DESCRIPTION',
+              label: 'Description',
               controller: _descCtrl,
               maxLines: 3,
             ),
@@ -893,7 +913,7 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
                       child: CircularProgressIndicator(
                           color: AppColors.white, strokeWidth: 2),
                     )
-                  : const Text('save changes'),
+                  : const Text('Save changes'),
             ),
           ],
         ),
@@ -907,23 +927,22 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
 // ---------------------------------------------------------------------------
 
 class _FinishBar extends StatelessWidget {
-  const _FinishBar({required this.onFinish});
+  const _FinishBar({required this.onAdd, required this.onNext});
 
-  final VoidCallback onFinish;
+  final VoidCallback onAdd;
+  final VoidCallback onNext;
 
   @override
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+          AppSpacing.md, 12, AppSpacing.md, AppSpacing.md + bottomPadding),
       decoration: const BoxDecoration(
         color: AppColors.white,
         border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
       ),
-      child: ElevatedButton(
-        onPressed: onFinish,
-        child: const Text("looks good — let's go"),
-      ),
+      child: _AddNextButtons(onAdd: onAdd, onNext: onNext),
     );
   }
 }
@@ -1012,7 +1031,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
   Future<void> _save() async {
     final title = _titleCtrl.text.trim();
     if (title.isEmpty) {
-      setState(() => _error = 'title is required');
+      setState(() => _error = 'Title is required');
       return;
     }
 
@@ -1021,19 +1040,19 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
     int day;
     if (widget.tripStart != null) {
       if (_date == null) {
-        setState(() => _error = 'pick a date');
+        setState(() => _error = 'Pick a date');
         return;
       }
       final start = DateUtils.dateOnly(widget.tripStart!);
       day = DateUtils.dateOnly(_date!).difference(start).inDays + 1;
       if (day < 1) {
-        setState(() => _error = 'date is before the trip starts');
+        setState(() => _error = 'Date is before the trip starts');
         return;
       }
     } else {
       final parsed = int.tryParse(_dayCtrl.text.trim());
       if (parsed == null || parsed < 1) {
-        setState(() => _error = 'day must be 1 or more');
+        setState(() => _error = 'Day must be 1 or more');
         return;
       }
       day = parsed;
@@ -1061,7 +1080,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
       widget.onSaved();
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'failed to add: ${e.toString()}');
+      setState(() => _error = 'Failed to add: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1071,7 +1090,8 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, 24 + bottomInset),
+      padding: EdgeInsets.fromLTRB(
+          AppSpacing.md, 20, AppSpacing.md, AppSpacing.lg + bottomInset),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1087,32 +1107,31 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'add item',
-              style: TextStyle(
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Add item',
+              style: AppTextStyles.labelLarge.copyWith(
                 color: AppColors.text,
-                fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 16),
-            _SheetField(label: 'TITLE', controller: _titleCtrl),
+            const SizedBox(height: AppSpacing.md),
+            _SheetField(label: 'Title', controller: _titleCtrl, hint: 'Activity name'),
             const SizedBox(height: 12),
             // Date (or fallback day) picker
             if (widget.tripStart != null)
               _SheetPickerButton(
-                label: 'DATE',
+                label: 'Date',
                 value: _date != null
                     ? DateFormat('EEE, MMM d').format(_date!)
                     : null,
-                hint: 'pick a date',
+                hint: 'Pick a date',
                 onTap: _pickDate,
               )
             else
               SizedBox(
                 width: 90,
-                child: _SheetField(label: 'DAY', controller: _dayCtrl),
+                child: _SheetField(label: 'Day', controller: _dayCtrl),
               ),
             const SizedBox(height: 12),
             // Time pickers
@@ -1120,18 +1139,18 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
               children: [
                 Expanded(
                   child: _SheetPickerButton(
-                    label: 'START TIME',
+                    label: 'Start time',
                     value: _startTime != null ? _fmt(_startTime!) : null,
-                    hint: 'pick time',
+                    hint: 'Pick time',
                     onTap: () => _pickTime(isStart: true),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _SheetPickerButton(
-                    label: 'END TIME',
+                    label: 'End time',
                     value: _endTime != null ? _fmt(_endTime!) : null,
-                    hint: 'pick time',
+                    hint: 'Pick time',
                     onTap: () => _pickTime(isStart: false),
                   ),
                 ),
@@ -1140,10 +1159,8 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
             const SizedBox(height: 12),
             // Category chips
             Text(
-              'CATEGORY',
-              style: AppTextStyles.labelSmall
-                  .copyWith(color: AppColors.textMuted)
-                  .copyWith(fontSize: 10, letterSpacing: 0.8),
+              'Category',
+              style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
             ),
             const SizedBox(height: 6),
             Wrap(
@@ -1168,8 +1185,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
                     ),
                     child: Text(
                       '${e.value} ${e.key}',
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: AppTextStyles.caption.copyWith(
                         color: selected ? AppColors.white : AppColors.textMuted,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1179,15 +1195,15 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
               }).toList(),
             ),
             const SizedBox(height: 12),
-            _SheetField(label: 'LOCATION', controller: _locationCtrl),
+            _SheetField(label: 'Location', controller: _locationCtrl, hint: 'Place name'),
             const SizedBox(height: 12),
             _SheetField(
-                label: 'DESCRIPTION', controller: _descCtrl, maxLines: 3),
+                label: 'Description', controller: _descCtrl, maxLines: 3),
             if (_error != null) ...[
               const SizedBox(height: 10),
               Text(
                 _error!,
-                style: const TextStyle(color: AppColors.coral, fontSize: 12),
+                style: AppTextStyles.bodySmall.copyWith(color: AppColors.coral),
               ),
             ],
             const SizedBox(height: 20),
@@ -1200,7 +1216,7 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
                       child: CircularProgressIndicator(
                           color: AppColors.white, strokeWidth: 2),
                     )
-                  : const Text('add to itinerary'),
+                  : const Text('Add to itinerary'),
             ),
           ],
         ),
@@ -1230,9 +1246,7 @@ class _SheetPickerButton extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTextStyles.labelSmall
-              .copyWith(color: AppColors.textMuted)
-              .copyWith(fontSize: 10, letterSpacing: 0.8),
+          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
         ),
         const SizedBox(height: 5),
         GestureDetector(
@@ -1281,10 +1295,7 @@ class _SheetField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted).copyWith(
-            fontSize: 10,
-            letterSpacing: 0.8,
-          ),
+          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
         ),
         const SizedBox(height: 5),
         TextField(

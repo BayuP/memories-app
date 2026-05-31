@@ -10,6 +10,7 @@ import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/pages/create_trip_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/home_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/itinerary_review_page.dart';
+import 'package:memories_app/features/trips/presentation/pages/itinerary_summary_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/public_trip_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/trip_timeline_page.dart';
 
@@ -104,6 +105,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             initialItems: items,
             aiEnabled: aiEnabled,
           );
+        },
+      ),
+      GoRoute(
+        path: '/trips/:id/itinerary-summary',
+        builder: (context, state) {
+          final tripId = state.pathParameters['id']!;
+          return ItinerarySummaryPage(tripId: tripId);
         },
       ),
       GoRoute(

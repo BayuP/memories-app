@@ -8,7 +8,9 @@ import 'package:memories_app/features/profile/domain/entities/profile_entity.dar
 import 'package:memories_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
-import 'package:memories_app/features/trips/presentation/widgets/trip_card.dart';
+import 'package:memories_app/shared/widgets/app_bottom_nav.dart';
+import 'package:memories_app/shared/widgets/app_trip_card.dart';
+import 'package:memories_app/shared/widgets/avatar_circle.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -38,24 +40,24 @@ class ProfilePage extends ConsumerWidget {
         ),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.error_outline,
                     color: AppColors.coral, size: 36),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'could not load profile',
+                  'Could not load profile',
                   style:
                       AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 OutlinedButton(
                   onPressed: () =>
                       ref.read(profileProvider.notifier).refresh(),
-                  child: const Text('retry'),
+                  child: const Text('Retry'),
                 ),
               ],
             ),
@@ -92,7 +94,7 @@ class _ProfileContent extends ConsumerWidget {
                 ),
                 error: (e, _) => Center(
                   child: Text(
-                    'failed to load trips',
+                    'Failed to load trips',
                     style: AppTextStyles.bodySmall,
                   ),
                 ),
@@ -103,17 +105,19 @@ class _ProfileContent extends ConsumerWidget {
                     await ref.read(profileProvider.notifier).refresh();
                   },
                   child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.md, 0, AppSpacing.md, AppSpacing.lg),
                     children: [
                       _buildStatsRow(trips),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.md),
                       if (trips.isEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 48),
+                          padding: const EdgeInsets.only(top: AppSpacing.xxl),
                           child: Center(
                             child: Text(
-                              'no trips yet',
-                              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textMuted),
+                              'No trips yet',
+                              style: AppTextStyles.bodyMedium
+                                  .copyWith(color: AppColors.textMuted),
                             ),
                           ),
                         )
@@ -121,22 +125,21 @@ class _ProfileContent extends ConsumerWidget {
                         ...trips.map(
                           (trip) => Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: TripCard(
+                            child: AppTripCard(
                               trip: trip,
                               members: const [],
+                              variant: TripCardVariant.list,
                               onTap: () {
                                 if (trip.status == TripStatus.published) {
-                                  context
-                                      .push('/public/trips/${trip.id}');
+                                  context.push('/public/trips/${trip.id}');
                                 } else {
-                                  context.push(
-                                      '/trips/${trip.id}/timeline');
+                                  context.push('/trips/${trip.id}/timeline');
                                 }
                               },
                             ),
                           ),
                         ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppSpacing.lg),
                       _DemoModeToggle(),
                     ],
                   ),
@@ -146,7 +149,25 @@ class _ProfileContent extends ConsumerWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(context),
+      bottomNavigationBar: AppBottomNav(
+        current: AppTab.profile,
+        onSelect: (tab) {
+          switch (tab) {
+            case AppTab.home:
+              context.go('/home');
+            case AppTab.journeys:
+              context.go('/home');
+            case AppTab.memories:
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Coming soon')),
+              );
+            case AppTab.profile:
+              // Already here — no-op.
+              break;
+          }
+        },
+        onAdd: () => context.push('/trips/create'),
+      ),
     );
   }
 
@@ -157,29 +178,34 @@ class _ProfileContent extends ConsumerWidget {
 
     return Container(
       color: AppColors.white,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Top row: back + actions
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new,
-                    size: 16, color: AppColors.text),
-                onPressed: () => context.pop(),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new,
+                      size: 16, color: AppColors.text),
+                  onPressed: () => context.pop(),
+                  padding: EdgeInsets.zero,
+                ),
               ),
               const Spacer(),
               TextButton(
                 onPressed: () => _showEditSheet(context, ref),
                 child: Text(
-                  'edit profile',
-                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.accentGreen),
+                  'Edit profile',
+                  style: AppTextStyles.labelSmall
+                      .copyWith(color: AppColors.accentGreen),
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xs),
               TextButton(
                 onPressed: () async {
                   ref.invalidate(tripsProvider);
@@ -188,34 +214,37 @@ class _ProfileContent extends ConsumerWidget {
                   await ref.read(authProvider.notifier).signOut();
                 },
                 child: Text(
-                  'sign out',
-                  style: AppTextStyles.labelSmall.copyWith(color: AppColors.coral),
+                  'Sign out',
+                  style: AppTextStyles.labelSmall
+                      .copyWith(color: AppColors.coral),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           // Avatar + name row
           Row(
             children: [
-              AvatarCircleWidget(
+              AvatarCircle(
                 label: initial,
                 seed: profile.handle,
                 size: 60,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       profile.displayName,
-                      style: AppTextStyles.displaySmall.copyWith(color: AppColors.text),
+                      style: AppTextStyles.displaySmall
+                          .copyWith(color: AppColors.text),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       '@${profile.handle}',
-                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.textMuted),
                     ),
                   ],
                 ),
@@ -229,17 +258,18 @@ class _ProfileContent extends ConsumerWidget {
 
   Widget _buildStatsRow(List<TripEntity> trips) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.only(top: AppSpacing.md),
       child: Row(
         children: [
           _StatChip(
             value: '${trips.length}',
-            label: 'trip${trips.length == 1 ? '' : 's'}',
+            label: trips.length == 1 ? 'Trip' : 'Trips',
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           _StatChip(
-            value: '${trips.where((t) => t.status == TripStatus.published).length}',
-            label: 'published',
+            value:
+                '${trips.where((t) => t.status == TripStatus.published).length}',
+            label: 'Published',
           ),
         ],
       ),
@@ -267,73 +297,6 @@ class _ProfileContent extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            children: [
-              _NavItem(
-                icon: Icons.map_outlined,
-                activeIcon: Icons.map_rounded,
-                label: 'trips',
-                selected: false,
-                onTap: () => context.go('/home'),
-              ),
-              _NavItem(
-                icon: Icons.explore_outlined,
-                activeIcon: Icons.explore,
-                label: 'explore',
-                selected: false,
-                onTap: () {},
-              ),
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => context.push('/trips/create'),
-                  child: Center(
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: const BoxDecoration(
-                        color: AppColors.text,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.add,
-                          color: AppColors.white, size: 22),
-                    ),
-                  ),
-                ),
-              ),
-              _NavItem(
-                icon: Icons.notifications_outlined,
-                activeIcon: Icons.notifications,
-                label: 'activity',
-                selected: false,
-                onTap: () => context.go('/home'),
-              ),
-              _NavItem(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
-                label: 'profile',
-                selected: true,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _StatChip extends StatelessWidget {
@@ -345,7 +308,8 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm + 4, vertical: AppSpacing.xs + 2),
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(AppRadius.full),
@@ -355,19 +319,15 @@ class _StatChip extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: AppTextStyles.labelMedium.copyWith(
               color: AppColors.text,
-              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-            ),
+            style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
           ),
         ],
       ),
@@ -407,9 +367,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 20,
-        right: 20,
-        top: 20,
+        left: AppSpacing.md + 4,
+        right: AppSpacing.md + 4,
+        top: AppSpacing.md + 4,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -425,27 +385,28 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.md + 4),
           Text(
-            'edit profile',
-            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.text)
-                .copyWith(fontWeight: FontWeight.w600),
+            'Edit profile',
+            style: AppTextStyles.bodyLarge
+                .copyWith(color: AppColors.text, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           Text(
-            'display name',
-            style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
+            'Display name',
+            style:
+                AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xs + 2),
           TextField(
             controller: _nameController,
             autofocus: true,
             style: AppTextStyles.bodyMedium,
             decoration: const InputDecoration(
-              hintText: 'your name',
+              hintText: 'Your name',
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.md + 4),
           ElevatedButton(
             onPressed: _saving
                 ? null
@@ -458,8 +419,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                     } catch (e) {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('failed to save: $e')),
+                          SnackBar(content: Text('Failed to save: $e')),
                         );
                       }
                     } finally {
@@ -475,9 +435,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                       strokeWidth: 2,
                     ),
                   )
-                : const Text('save'),
+                : const Text('Save'),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );
@@ -508,48 +468,6 @@ class _DemoModeToggle extends ConsumerWidget {
         onChanged: (val) {
           ref.read(demoModeProvider.notifier).state = val;
         },
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? AppColors.text : AppColors.textMuted;
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(selected ? activeIcon : icon, color: color, size: 22),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

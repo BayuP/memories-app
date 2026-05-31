@@ -153,7 +153,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
     final isSpont =
         widget.kind == 'spontaneous' || widget.itemId == null;
     final pageTitle =
-        isSpont ? 'spontaneous moment' : (item?.title ?? 'check in');
+        isSpont ? 'Spontaneous moment' : (item?.title ?? 'Check in');
     final subtitle = item != null
         ? 'day ${item.day}${item.locationName != null ? ' · ${item.locationName}' : ''}'
         : _formatDate(_capturedAt);
@@ -171,18 +171,11 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           children: [
             Text(
               pageTitle,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.text,
-              ),
+              style: AppTextStyles.appBarTitle,
             ),
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.textMuted,
-              ),
+              style: AppTextStyles.appBarSubtitle,
             ),
           ],
         ),
@@ -204,9 +197,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                   const Divider(height: 1, thickness: 0.5),
                   _buildTimeRow(),
                   const Divider(height: 1, thickness: 0.5),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   _buildTabSelector(),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xxs),
                   const Divider(height: 1, thickness: 0.5),
                   _buildTabContent(),
                   const SizedBox(height: 80),
@@ -260,7 +253,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                               width: 5,
                               height: 5,
                               margin:
-                                  const EdgeInsets.symmetric(horizontal: 2),
+                                  const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: i == _activeImageIndex
@@ -339,7 +332,8 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
     await showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.sheet)),
       ),
       builder: (ctx) => SafeArea(
         child: Column(
@@ -348,7 +342,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.only(top: 10, bottom: 8),
+              margin: const EdgeInsets.only(top: 10, bottom: AppSpacing.sm),
               decoration: BoxDecoration(
                 color: AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.full),
@@ -357,7 +351,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             ListTile(
               leading: const Icon(Icons.photo_library_outlined,
                   color: AppColors.text),
-              title: const Text('choose from gallery'),
+              title: const Text('Choose from gallery'),
               onTap: () async {
                 Navigator.pop(ctx);
                 final images = await _picker.pickMultiImage();
@@ -372,7 +366,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             ListTile(
               leading:
                   const Icon(Icons.camera_alt_outlined, color: AppColors.text),
-              title: const Text('take a photo'),
+              title: const Text('Take a photo'),
               onTap: () async {
                 Navigator.pop(ctx);
                 final image = await _picker.pickImage(
@@ -386,7 +380,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                 }
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
           ],
         ),
       ),
@@ -399,20 +393,20 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   Widget _buildMemoryNote() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: TextField(
         controller: _memoryNoteController,
         minLines: 1,
         maxLines: 2,
         decoration: const InputDecoration(
-          hintText: "what's the moment?",
+          hintText: "What's the moment?",
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
           filled: false,
         ),
-        style: const TextStyle(
-          fontSize: 20,
+        style: AppTextStyles.headlineSmall.copyWith(
           color: AppColors.text,
           fontWeight: FontWeight.w500,
         ),
@@ -426,23 +420,25 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   Widget _buildTimeRow() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: 10),
       child: Row(
         children: [
           const Icon(Icons.access_time_outlined,
               size: 16, color: AppColors.textMuted),
-          const SizedBox(width: 8),
-          const Expanded(
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
             child: Text(
-              'when did this happen?',
-              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+              'When did this happen?',
+              style: AppTextStyles.bodySmall
+                  .copyWith(color: AppColors.textMuted),
             ),
           ),
           GestureDetector(
             onTap: _pickTime,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
                 color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(AppRadius.full),
@@ -450,8 +446,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
               ),
               child: Text(
                 _formatTime(_capturedAt),
-                style: const TextStyle(
-                  fontSize: 11,
+                style: AppTextStyles.labelSmall.copyWith(
                   fontWeight: FontWeight.w500,
                   color: AppColors.text,
                 ),
@@ -486,21 +481,20 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
   // ---------------------------------------------------------------------------
 
   Widget _buildTabSelector() {
-    const labels = ['memory', 'logistics', 'rec.'];
+    const labels = ['Memory', 'Logistics', 'Rec.'];
     return Row(
       children: List.generate(labels.length, (i) {
         final isActive = _activeTab == i;
         return GestureDetector(
           onTap: () => setState(() => _activeTab = i),
           child: Padding(
-            padding: const EdgeInsets.only(left: 16),
+            padding: const EdgeInsets.only(left: AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   labels[i],
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: AppTextStyles.labelSmall.copyWith(
                     fontWeight: isActive
                         ? FontWeight.w600
                         : FontWeight.w400,
@@ -543,29 +537,28 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   Widget _buildMemoryTab() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, 12, AppSpacing.md, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Visibility
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
               color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.group_outlined,
+                const Icon(Icons.group_outlined,
                     size: 14, color: AppColors.textMuted),
-                SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
-                    'visible to trip collaborators',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
-                    ),
+                    'Visible to trip collaborators',
+                    style: AppTextStyles.labelSmall
+                        .copyWith(color: AppColors.textMuted),
                   ),
                 ),
               ],
@@ -573,15 +566,14 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           ),
           const SizedBox(height: 14),
           // Vibe row
-          const Text(
-            'vibe',
-            style: TextStyle(
-              fontSize: 11,
+          Text(
+            'Vibe',
+            style: AppTextStyles.labelSmall.copyWith(
               fontWeight: FontWeight.w500,
               color: AppColors.textMuted,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               _VibeButton(
@@ -593,7 +585,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                       _selectedMood == 'love' ? null : 'love';
                 }),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               _VibeButton(
                 emoji: '😐',
                 value: 'neutral',
@@ -603,7 +595,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                       _selectedMood == 'neutral' ? null : 'neutral';
                 }),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               _VibeButton(
                 emoji: '😕',
                 value: 'sad',
@@ -622,19 +614,19 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   Widget _buildLogisticsTab() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, 12, AppSpacing.md, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Private header
           Row(
-            children: const [
-              Icon(Icons.lock_outline, size: 14, color: AppColors.coral),
-              SizedBox(width: 6),
+            children: [
+              const Icon(Icons.lock_outline, size: 14, color: AppColors.coral),
+              const SizedBox(width: 6),
               Text(
-                'private — never published or shared with AI',
-                style: TextStyle(
-                  fontSize: 10,
+                'Private — never published or shared with AI',
+                style: AppTextStyles.labelSmall.copyWith(
                   color: AppColors.coral,
                   fontWeight: FontWeight.w500,
                 ),
@@ -656,7 +648,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                         RegExp(r'[0-9.]')),
                   ],
                   decoration: const InputDecoration(
-                    hintText: 'cost',
+                    hintText: 'Cost',
                     prefixIcon: Icon(Icons.attach_money,
                         size: 16, color: AppColors.textMuted),
                     prefixIconConstraints:
@@ -664,7 +656,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 flex: 1,
                 child: TextField(
@@ -683,7 +675,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             minLines: 2,
             maxLines: 4,
             decoration: const InputDecoration(
-              hintText: 'notes (e.g. entrance fee, transport…)',
+              hintText: 'Notes (e.g. entrance fee, transport…)',
             ),
           ),
         ],
@@ -693,14 +685,15 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   Widget _buildRecTab() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, 12, AppSpacing.md, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
             controller: _recTitleController,
             decoration: const InputDecoration(
-              hintText: 'what would you recommend?',
+              hintText: 'What would you recommend?',
             ),
           ),
           const SizedBox(height: 10),
@@ -709,14 +702,14 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             minLines: 3,
             maxLines: 5,
             decoration: const InputDecoration(
-              hintText: 'tips for others...',
+              hintText: 'Tips for others...',
             ),
           ),
           const SizedBox(height: 10),
           TextField(
             controller: _recTagsController,
             decoration: const InputDecoration(
-              hintText: 'tags (comma-separated)',
+              hintText: 'Tags (comma-separated)',
               prefixIcon:
                   Icon(Icons.tag, size: 16, color: AppColors.textMuted),
               prefixIconConstraints:
@@ -724,10 +717,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'rating',
-            style: TextStyle(
-              fontSize: 11,
+          Text(
+            'Rating',
+            style: AppTextStyles.labelSmall.copyWith(
               fontWeight: FontWeight.w500,
               color: AppColors.textMuted,
             ),
@@ -739,7 +731,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
               return GestureDetector(
                 onTap: () => setState(() => _recRating = starNum),
                 child: Padding(
-                  padding: const EdgeInsets.only(right: 4),
+                  padding: const EdgeInsets.only(right: AppSpacing.xs),
                   child: Icon(
                     starNum <= _recRating
                         ? Icons.star_rounded
@@ -765,9 +757,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
   Widget _buildSaveButton(BuildContext context, bool isSpont) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        16,
+        AppSpacing.md,
         10,
-        16,
+        AppSpacing.md,
         MediaQuery.of(context).padding.bottom + 10,
       ),
       decoration: const BoxDecoration(
@@ -792,8 +784,8 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                 )
               : Text(
                   widget.isCreateMode
-                      ? (isSpont ? 'save moment' : 'check in')
-                      : 'save changes',
+                      ? (isSpont ? 'Save moment' : 'Check in')
+                      : 'Save changes',
                 ),
         ),
       ),
@@ -908,7 +900,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('moment saved'),
+            content: Text('Moment saved'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -918,7 +910,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('failed to save: ${e.toString()}'),
+            content: Text('Failed to save: ${e.toString()}'),
           ),
         );
       }
