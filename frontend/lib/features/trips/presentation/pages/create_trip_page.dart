@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +12,7 @@ import 'package:memories_app/features/auth/presentation/providers/auth_provider.
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
 import 'package:memories_app/features/trips/presentation/widgets/trip_card.dart';
+import 'package:memories_app/shared/widgets/location_autocomplete_field.dart';
 
 // ---------------------------------------------------------------------------
 // Entry point
@@ -858,9 +858,16 @@ class _LabeledField extends StatelessWidget {
 
 // ---------------------------------------------------------------------------
 // Destination field with OSM Nominatim autocomplete
+//
+// Refactored to delegate to the shared LocationAutocompleteField.
+// Persisting destination coords is out of scope for this field — the
+// onSelected callback intentionally ignores coords for now.
+// TODO(geocoding): when destination lat/lng needs to be stored (e.g. for a
+//   trip-level map centre), plumb the PlaceSuggestion through to the parent
+//   state here and include it in the create-trip API call.
 // ---------------------------------------------------------------------------
 
-class _DestinationField extends StatefulWidget {
+class _DestinationField extends StatelessWidget {
   const _DestinationField({
     required this.controller,
     this.errorText,
@@ -870,141 +877,22 @@ class _DestinationField extends StatefulWidget {
   final String? errorText;
 
   @override
-  State<_DestinationField> createState() => _DestinationFieldState();
-}
-
-class _DestinationFieldState extends State<_DestinationField> {
-  Timer? _debounce;
-  List<Map<String, dynamic>> _results = [];
-  OverlayEntry? _overlay;
-  final _layerLink = LayerLink();
-  final _fieldKey = GlobalKey();
-  final _dio = Dio();
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _overlay?.remove();
-    _overlay = null;
-    super.dispose();
-  }
-
-  void _onChanged(String value) {
-    _debounce?.cancel();
-    if (value.trim().length < 3) {
-      _clearOverlay();
-      return;
-    }
-    _debounce = Timer(
-      const Duration(milliseconds: 300),
-      () => _search(value.trim()),
-    );
-  }
-
-  Future<void> _search(String query) async {
-    try {
-      final res = await _dio.get(
-        'https://nominatim.openstreetmap.org/search',
-        queryParameters: {'q': query, 'format': 'json', 'limit': 5},
-        options: Options(headers: {'User-Agent': 'MemoriesApp/1.0 bayupabisa@gmail.com'}),
-      );
-      if (!mounted) return;
-      final results = List<Map<String, dynamic>>.from(res.data as List);
-      setState(() => _results = results);
-      if (results.isNotEmpty) _showOverlay();
-    } catch (e, st) {
-      // ignore: avoid_print
-      debugPrint('[DestinationField] search error: $e\n$st');
-    }
-  }
-
-  void _showOverlay() {
-    _clearOverlay();
-    final renderBox =
-        _fieldKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final width = renderBox.size.width;
-    final height = renderBox.size.height;
-
-    _overlay = OverlayEntry(
-      builder: (_) => Positioned(
-        width: width,
-        child: CompositedTransformFollower(
-          link: _layerLink,
-          showWhenUnlinked: false,
-          offset: Offset(0, height + 2),
-          child: Material(
-            elevation: 4,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            color: AppColors.white,
-            child: ListView.builder(
-              shrinkWrap: true,
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              itemCount: _results.length,
-              itemBuilder: (ctx, i) {
-                final raw = _results[i]['display_name'] as String? ?? '';
-                // Show first 3 comma-separated parts for brevity
-                final parts = raw.split(',');
-                final label = parts.take(3).join(',').trim();
-                return InkWell(
-                  onTap: () {
-                    widget.controller.text = label;
-                    _clearOverlay();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.location_on_outlined,
-                            size: 14, color: AppColors.textMuted),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            label,
-                            style: AppTextStyles.bodyMedium
-                                .copyWith(fontSize: 13),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-
-    Overlay.of(context).insert(_overlay!);
-  }
-
-  void _clearOverlay() {
-    _overlay?.remove();
-    _overlay = null;
-    if (mounted) setState(() => _results = []);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: TextFormField(
-        key: _fieldKey,
-        controller: widget.controller,
-        style: AppTextStyles.bodyMedium,
-        onChanged: _onChanged,
-        decoration: InputDecoration(
-          hintText: 'City, country',
-          prefixIcon: const Icon(Icons.location_on_outlined,
-              size: 16, color: AppColors.textMuted),
-          prefixIconConstraints:
-              const BoxConstraints(minWidth: 36, minHeight: 36),
-          errorText: widget.errorText,
+    return LocationAutocompleteField(
+      controller: controller,
+      hint: 'City, country',
+      // Coords ignored intentionally — see TODO above.
+      onSelected: (_) {},
+      inputDecoration: InputDecoration(
+        hintText: 'City, country',
+        prefixIcon: const Icon(
+          Icons.location_on_outlined,
+          size: 16,
+          color: AppColors.textMuted,
         ),
+        prefixIconConstraints:
+            const BoxConstraints(minWidth: 36, minHeight: 36),
+        errorText: errorText,
       ),
     );
   }

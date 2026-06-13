@@ -14,6 +14,7 @@ import 'package:memories_app/shared/widgets/app_bottom_nav.dart';
 import 'package:memories_app/shared/widgets/app_segmented_tabs.dart';
 import 'package:memories_app/shared/widgets/app_state_badge.dart';
 import 'package:memories_app/shared/widgets/app_states.dart';
+import 'package:memories_app/shared/widgets/location_autocomplete_field.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -903,6 +904,11 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
   TimeOfDay? _startTime;
   bool _saving = false;
 
+  // Coordinates selected via autocomplete. Pre-populated from the item when
+  // editing, and updated when the user picks a suggestion.
+  double? _lat;
+  double? _lng;
+
   bool get _isEditMode => widget.item != null;
 
   @override
@@ -911,6 +917,8 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
     final item = widget.item;
     _nameController = TextEditingController(text: item?.title ?? '');
     _locationController = TextEditingController(text: item?.locationName ?? '');
+    _lat = item?.lat;
+    _lng = item?.lng;
 
     if (item?.startTime != null) {
       final parts = item!.startTime!.split(':');
@@ -964,6 +972,8 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
           if (_startTime != null)
             'start_time':
                 '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}:00',
+          if (_lat != null) 'lat': _lat,
+          if (_lng != null) 'lng': _lng,
         };
         await notifier.updateItem(widget.item!.id, body);
       } else {
@@ -975,6 +985,8 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
           if (_startTime != null)
             'start_time':
                 '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}:00',
+          if (_lat != null) 'lat': _lat,
+          if (_lng != null) 'lng': _lng,
         };
         await notifier.createItem(body);
       }
@@ -1036,14 +1048,33 @@ class _ActivitySheetState extends ConsumerState<_ActivitySheet> {
               ),
               const SizedBox(height: 14),
 
-              // Location field
+              // Location field — Nominatim autocomplete; fills _lat/_lng on selection.
               const _SheetLabel(text: 'location'),
               const SizedBox(height: 6),
-              TextFormField(
+              LocationAutocompleteField(
                 controller: _locationController,
-                textCapitalization: TextCapitalization.none,
-                style: AppTextStyles.labelMedium.copyWith(color: AppColors.text),
-                decoration: _inputDecoration('location (optional)'),
+                hint: 'location (optional)',
+                onSelected: (suggestion) {
+                  setState(() {
+                    if (suggestion != null) {
+                      _lat = suggestion.lat;
+                      _lng = suggestion.lng;
+                    } else {
+                      // Field was cleared — discard coords.
+                      _lat = null;
+                      _lng = null;
+                    }
+                  });
+                },
+                inputDecoration: _inputDecoration('location (optional)').copyWith(
+                  prefixIcon: const Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: AppColors.textMuted,
+                  ),
+                  prefixIconConstraints:
+                      const BoxConstraints(minWidth: 32, minHeight: 32),
+                ),
               ),
               const SizedBox(height: 14),
 

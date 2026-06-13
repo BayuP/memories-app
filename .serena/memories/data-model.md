@@ -34,7 +34,7 @@ id, checkin_id FK checkins UNIQUE, title, body, tags text[], rating int CHECK 1.
 ## media
 id, checkin_id FK checkins nullable, owner_id FK users, r2_key, mime, width, height, taken_at, lat nullable, lng nullable
 
-## trip_stories (Phase 8, migration 0003_trip_story)
+## trip_stories (Phase 8, migration 0004_trip_story — renumbered from 0003 to fix duplicate-0002 collision)
 id, trip_id FK trips UNIQUE ON DELETE CASCADE, title, body, status, created_at, updated_at (trigger)
 One story per trip (UpsertStory = INSERT…ON CONFLICT(trip_id) DO UPDATE). AI-generated from memory+recommendations; logistics excluded.
 

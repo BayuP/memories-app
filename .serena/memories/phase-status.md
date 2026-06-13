@@ -5,7 +5,7 @@
 Source: `adjust-plan.md` + mockup `007BBAC1-...PNG`. Closed the "memories consumption" half of the design. Backend = only Story; rest frontend.
 
 ### Backend — Story feature (`internal/story/`, NEW)
-- Migration `0003_trip_story.up/.down.sql`: `trip_stories` table (id, `trip_id UNIQUE → trips ON DELETE CASCADE`, title, body, status, timestamps, `set_updated_at` trigger).
+- Migration `0004_trip_story.up/.down.sql` (originally authored as 0003, renumbered — see migration-numbering note below): `trip_stories` table (id, `trip_id UNIQUE → trips ON DELETE CASCADE`, title, body, status, timestamps, `set_updated_at` trigger).
 - Package files: story.go, model.go (`Story` + `ErrNotFound`/`ErrForbidden`), repository.go (pgxpool, `UpsertStory` INSERT…ON CONFLICT, `FindByTripID`), dto.go, service.go, handler.go.
 - Routes (auth + membership-enforced via `tripRepo.IsMember`), mounted in `cmd/server/main.go`:
   - `POST /api/v1/trips/{tripID}/story/generate` — reuses existing Anthropic client via `ai.RefineItinerary(ctx, nil, prompt)`. Prompt fed memory notes/moods + recommendations ONLY.
@@ -26,8 +26,18 @@ Source: `adjust-plan.md` + mockup `007BBAC1-...PNG`. Closed the "memories consum
 - Native location config: iOS `NSLocationWhenInUseUsageDescription`, Android `ACCESS_FINE/COARSE_LOCATION`.
 - `flutter analyze`: zero new issues.
 
+### Migration-numbering fix (committed d45b322)
+Two migrations both numbered 0002 (`add_item_category` + `checkins_vibe_items_sort_order`). golang-migrate uses numeric version → shadowed the vibe/sort_order one; it NEVER applied (Phase 6 vibe/reorder code was silently broken vs DB). Renumbered: vibe/sort_order → 0003, trip_story → 0004. Ran `make migrate-up` → DB now at **version 4**; `checkins.vibe`, `itinerary_items.sort_order`, `trip_stories` all present.
+
+### Location autocomplete (Nominatim/OSM) — frontend only, no backend
+- `core/location/geocoding_service.dart`: `GeocodingService.search()` + `PlaceSuggestion{displayName,lat,lng,shortLabel}`. Direct Dio to `nominatim.openstreetmap.org/search` (NOT the authed ApiClient). User-Agent `memories-app/1.0 bayupabisa@gmail.com`, ≥3-char guard, `[]` on error. Nominatim sends `lon` (not `lng`).
+- `shared/widgets/location_autocomplete_field.dart`: reusable field + overlay dropdown, 400ms debounce. Overlay via `Overlay.of(context).insert` → root navigator overlay → renders ABOVE bottom sheet (verified on iOS sim). Manual-edit keeps last coords; clearing field → `onSelected(null)`.
+- Wired: itinerary `_ActivitySheet` location field → stores `_lat`/`_lng`, sends `lat`/`lng` in create+patch item payloads (backend already accepts). `create_trip` destination refactored onto shared widget (coords still discarded — TODO).
+- `trip_map_page.dart`: now also renders itinerary items with coords as amber square pins (distinct from check-in photo pins) + `_ItineraryPinCard`; `CameraFit.bounds` across all points.
+- Verified: `integration_test/location_autocomplete_test.dart` passes on iOS sim against LIVE Nominatim (suggestion renders above sheet, tap fills field + coords). `integration_test` dev-dep added.
+
 ### Deferred to v2
-Real trip cover photos; `GET /me/checkins` (N+1 in memories grid); Memory Book real export + Customize; Story share (`share_plus`); marker clustering.
+Real trip cover photos; `GET /me/checkins` (N+1 in memories grid); Memory Book real export + Customize; Story share (`share_plus`); marker clustering; persist trip destination coords (geocoded but discarded — needs `trips.dest_lat/dest_lng` migration); check-in manual place field.
 
 ## Phase 7 — UX Polish & Frontend Restructure ✅ DONE (2026-05-31)
 
