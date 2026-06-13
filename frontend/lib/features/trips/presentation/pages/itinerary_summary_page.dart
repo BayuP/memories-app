@@ -44,10 +44,14 @@ class ItinerarySummaryPage extends ConsumerWidget {
                   const Icon(Icons.location_on_outlined,
                       size: 12, color: AppColors.textMuted),
                   const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    detail.trip.destination,
-                    style: AppTextStyles.labelSmall
-                        .copyWith(color: AppColors.textMuted),
+                  Flexible(
+                    child: Text(
+                      detail.trip.destination,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.labelSmall
+                          .copyWith(color: AppColors.textMuted),
+                    ),
                   ),
                   if (detail.trip.startDate != null &&
                       detail.trip.endDate != null) ...[
