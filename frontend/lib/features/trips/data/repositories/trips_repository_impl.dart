@@ -45,6 +45,11 @@ class TripsRepositoryImpl implements TripsRepository {
   }
 
   @override
+  Future<void> removeMember(String tripId, String userId) async {
+    await _dataSource.removeMember(tripId, userId);
+  }
+
+  @override
   Future<List<PublicProfileEntity>> searchUsers(String q) async {
     final models = await _dataSource.searchUsers(q);
     return models.map((m) => m.toEntity()).toList();

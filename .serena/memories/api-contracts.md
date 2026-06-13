@@ -51,6 +51,11 @@ Dates: `"YYYY-MM-DD"` string
 - POST `/api/v1/trips/:id/ai/generate` → {items: [ItemResponse]}; replaces source='ai' items
 - POST `/api/v1/trips/:id/ai/refine` — {message, history: [{role, content}]} → {reply: string}; rate-limit 20/trip/day
 
+### Story (Phase 8 — auth required, trip-member only)
+- POST `/api/v1/trips/:tripID/story/generate` → {title, body, ...}; reuses Claude client; upserts trip_stories. Feeds memory notes/moods + recommendations ONLY — checkin_logistics excluded.
+- GET  `/api/v1/trips/:tripID/story` → StoryResponse
+- PATCH `/api/v1/trips/:tripID/story` — {title?, body?} → StoryResponse
+
 ### Infra
 - GET `/healthz` — public → {status: "ok"}
 - GET `/api/v1/home` — auth → {trips: []} (stub, replaced by GET /trips)

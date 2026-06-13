@@ -155,6 +155,16 @@ class TripsRemoteDataSource {
     return MemberModel.fromJson(data as Map<String, dynamic>);
   }
 
+  Future<void> removeMember(String tripId, String userId) async {
+    // DEMO: no-op
+    if (_demoMode) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      return;
+    }
+    // DEMO: real API call below
+    await _apiClient.delete('/api/v1/trips/$tripId/members/$userId');
+  }
+
   Future<List<PublicProfileModel>> searchUsers(String q) async {
     // DEMO: filter mock users by query
     if (_demoMode) {

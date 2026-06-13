@@ -4,14 +4,20 @@ import 'package:go_router/go_router.dart';
 import 'package:memories_app/core/demo/demo_flag.dart';
 import 'package:memories_app/features/auth/presentation/pages/auth_page.dart';
 import 'package:memories_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:memories_app/features/book/presentation/pages/memory_book_page.dart';
 import 'package:memories_app/features/checkin/presentation/pages/checkin_page.dart';
+import 'package:memories_app/features/checkin/presentation/pages/memory_detail_page.dart';
+import 'package:memories_app/features/memories/presentation/pages/memories_page.dart';
 import 'package:memories_app/features/profile/presentation/pages/profile_page.dart';
+import 'package:memories_app/features/story/presentation/pages/trip_story_page.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/pages/create_trip_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/home_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/itinerary_review_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/itinerary_summary_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/public_trip_page.dart';
+import 'package:memories_app/features/trips/presentation/pages/trip_map_page.dart';
+import 'package:memories_app/features/trips/presentation/pages/trip_people_page.dart';
 import 'package:memories_app/features/trips/presentation/pages/trip_timeline_page.dart';
 
 // Route name constants
@@ -27,6 +33,14 @@ abstract final class AppRoutes {
   static const String checkinView = '/checkins/:id';
   static const String publicTrip = '/public/trips/:id';
   static const String profile = '/profile';
+
+  // New routes
+  static const String memoryDetail = '/memories/:id';
+  static const String memories = '/memories';
+  static const String tripMap = '/trips/:id/map';
+  static const String tripPeople = '/trips/:id/people';
+  static const String tripStory = '/trips/:id/story';
+  static const String tripBook = '/trips/:id/book';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -165,6 +179,48 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.profile,
         builder: (context, state) => const ProfilePage(),
+      ),
+
+      // ── New routes ──────────────────────────────────────────────────────
+
+      GoRoute(
+        path: AppRoutes.memories,
+        builder: (context, state) => const MemoriesPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.memoryDetail,
+        builder: (context, state) {
+          final checkinId = state.pathParameters['id']!;
+          return MemoryDetailPage(checkinId: checkinId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.tripMap,
+        builder: (context, state) {
+          final tripId = state.pathParameters['id']!;
+          return TripMapPage(tripId: tripId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.tripPeople,
+        builder: (context, state) {
+          final tripId = state.pathParameters['id']!;
+          return TripPeoplePage(tripId: tripId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.tripStory,
+        builder: (context, state) {
+          final tripId = state.pathParameters['id']!;
+          return TripStoryPage(tripId: tripId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.tripBook,
+        builder: (context, state) {
+          final tripId = state.pathParameters['id']!;
+          return MemoryBookPage(tripId: tripId);
+        },
       ),
     ],
   );

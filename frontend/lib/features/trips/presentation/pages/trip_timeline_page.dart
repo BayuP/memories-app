@@ -6,10 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:memories_app/core/router/app_router.dart';
 import 'package:memories_app/core/theme/app_theme.dart';
 import 'package:memories_app/features/checkin/domain/entities/checkin_entity.dart';
+import 'package:memories_app/features/checkin/presentation/feelings.dart';
 import 'package:memories_app/features/checkin/presentation/providers/checkin_provider.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
 import 'package:memories_app/shared/widgets/app_bottom_nav.dart';
+import 'package:memories_app/shared/widgets/app_segmented_tabs.dart';
 import 'package:memories_app/shared/widgets/app_state_badge.dart';
 import 'package:memories_app/shared/widgets/app_states.dart';
 
@@ -127,6 +129,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
           body: Column(
             children: [
               _buildSubheaderRow(members, itemsAsync, checkinsForSubheader),
+              _buildSegmentedTabs(context, trip),
               _buildDaySelector(dayCount, currentDay, trip.startDate),
               const Divider(height: 1, thickness: 0.5),
               Expanded(
@@ -198,9 +201,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
             case AppTab.journeys:
               context.go(AppRoutes.home);
             case AppTab.memories:
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Coming soon')),
-              );
+              context.push('/memories');
             case AppTab.profile:
               context.push(AppRoutes.profile);
           }
@@ -263,16 +264,70 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         IconButton(
           icon: const Icon(Icons.person_add_outlined,
               color: AppColors.textMuted, size: 20),
-          onPressed: () {},
+          onPressed: () =>
+              context.push('/trips/${trip.id}/people'),
           visualDensity: VisualDensity.compact,
         ),
         IconButton(
           icon: const Icon(Icons.more_vert,
               color: AppColors.textMuted, size: 20),
-          onPressed: () {},
+          onPressed: () => _showTripOverflowMenu(context, trip),
           visualDensity: VisualDensity.compact,
         ),
       ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Trip overflow menu (Story + Memory Book)
+  // ---------------------------------------------------------------------------
+
+  void _showTripOverflowMenu(BuildContext context, TripEntity trip) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(top: 10, bottom: AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.auto_stories_outlined,
+                  color: AppColors.text),
+              title: const Text('Story'),
+              subtitle: const Text('Generate your trip narrative'),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/trips/${trip.id}/story');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.menu_book_outlined,
+                  color: AppColors.text),
+              title: const Text('Memory Book'),
+              subtitle: const Text('Create a book of this trip'),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/trips/${trip.id}/book');
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
+      ),
     );
   }
 
@@ -359,6 +414,29 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Segmented tabs (Timeline / Map / People)
+  // ---------------------------------------------------------------------------
+
+  Widget _buildSegmentedTabs(BuildContext context, TripEntity trip) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, AppSpacing.xs, 0, AppSpacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSegmentedTabs(
+            labels: const ['Timeline', 'Map', 'People'],
+            selectedIndex: 0, // Timeline is always active on this page
+            onSelect: (index) {
+              if (index == 1) context.push('/trips/${trip.id}/map');
+              if (index == 2) context.push('/trips/${trip.id}/people');
+            },
+          ),
         ],
       ),
     );
@@ -527,7 +605,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
                       kind: 'spontaneous',
                     ),
                     onTapCheckin: (c) => context.push(
-                      '/checkins/${c.id}?tripId=${trip.id}',
+                      '/memories/${c.id}',
                     ),
                   ),
                 ),
@@ -584,6 +662,14 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
         final isNow = nowIndex != null && itemIndex == nowIndex;
         final isDone = checkedInItemIds.contains(item.id);
 
+        // Find the matching checkin for this item (for photo count/thumbnail)
+        final matchedCheckin = isDone
+            ? checkins.firstWhere(
+                (c) => c.itineraryItemId == item.id,
+                orElse: () => checkins.first,
+              )
+            : null;
+
         return _TimelineRow(
           isLast: false,
           hasConnector: true,
@@ -592,6 +678,7 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
             item: item,
             isDone: isDone,
             isNow: isNow,
+            matchedCheckin: matchedCheckin,
             onCheckin: () => _openCheckinCreate(
               tripId: trip.id,
               itemId: item.id,
@@ -750,12 +837,18 @@ class _TripTimelinePageState extends ConsumerState<TripTimelinePage> {
     required ItineraryItemEntity item,
     required bool isDone,
     required bool isNow,
+    CheckinEntity? matchedCheckin,
     required VoidCallback onCheckin,
     required VoidCallback onEdit,
     required VoidCallback onDelete,
   }) {
     if (isDone) {
-      return _DoneCard(item: item, onEdit: onEdit, onDelete: onDelete);
+      return _DoneCard(
+        item: item,
+        checkin: matchedCheckin,
+        onEdit: onEdit,
+        onDelete: onDelete,
+      );
     }
     if (isNow) {
       return _NowCard(
@@ -1086,16 +1179,23 @@ class _SheetLabel extends StatelessWidget {
 class _DoneCard extends StatelessWidget {
   const _DoneCard({
     required this.item,
+    this.checkin,
     required this.onEdit,
     required this.onDelete,
   });
 
   final ItineraryItemEntity item;
+  final CheckinEntity? checkin;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
+    final photoCount = checkin?.media.length ?? 0;
+    final thumbUrl = checkin != null && checkin!.media.isNotEmpty
+        ? checkin!.media.first.url
+        : null;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -1107,6 +1207,24 @@ class _DoneCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Optional leading thumbnail
+          if (thumbUrl != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: Image.network(
+                thumbUrl,
+                width: 44,
+                height: 44,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 44,
+                  height: 44,
+                  color: AppColors.accentGreen.withOpacity(0.2),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1150,7 +1268,7 @@ class _DoneCard extends StatelessWidget {
                         size: 11, color: AppColors.accentGreen),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
-                      '0 photos',
+                      '$photoCount ${photoCount == 1 ? 'photo' : 'photos'}',
                       style: AppTextStyles.caption
                           .copyWith(color: AppColors.accentGreen),
                     ),
@@ -1574,14 +1692,7 @@ class _SpontaneousCheckinCard extends StatelessWidget {
     );
   }
 
-  String _moodEmoji(String mood) {
-    switch (mood) {
-      case 'love': return '';
-      case 'neutral': return '';
-      case 'sad': return '';
-      default: return '';
-    }
-  }
+  String _moodEmoji(String mood) => moodEmoji(mood);
 }
 
 // ---------------------------------------------------------------------------

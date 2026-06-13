@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
 import 'package:memories_app/core/theme/app_theme.dart';
+import 'package:memories_app/features/checkin/presentation/feelings.dart';
 import 'package:memories_app/features/checkin/presentation/providers/checkin_provider.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
@@ -56,7 +58,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
   // Memory
   final _memoryNoteController = TextEditingController();
-  String? _selectedMood; // 'love' | 'neutral' | 'sad'
+  String? _selectedMood; // value from kFeelings: 'amazing' | 'love' | 'good' | 'neutral' | 'sad'
 
   // Logistics
   final _logisticsCostController = TextEditingController();
@@ -565,9 +567,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             ),
           ),
           const SizedBox(height: 14),
-          // Vibe row
+          // Feeling row
           Text(
-            'Vibe',
+            'How are you feeling?',
             style: AppTextStyles.labelSmall.copyWith(
               fontWeight: FontWeight.w500,
               color: AppColors.textMuted,
@@ -575,37 +577,24 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Row(
-            children: [
-              _VibeButton(
-                emoji: '😍',
-                value: 'love',
-                selected: _selectedMood == 'love',
-                onTap: () => setState(() {
-                  _selectedMood =
-                      _selectedMood == 'love' ? null : 'love';
-                }),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              _VibeButton(
-                emoji: '😐',
-                value: 'neutral',
-                selected: _selectedMood == 'neutral',
-                onTap: () => setState(() {
-                  _selectedMood =
-                      _selectedMood == 'neutral' ? null : 'neutral';
-                }),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              _VibeButton(
-                emoji: '😕',
-                value: 'sad',
-                selected: _selectedMood == 'sad',
-                onTap: () => setState(() {
-                  _selectedMood =
-                      _selectedMood == 'sad' ? null : 'sad';
-                }),
-              ),
-            ],
+            children: kFeelings.map((f) {
+              final isFirst = f == kFeelings.first;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isFirst) const SizedBox(width: AppSpacing.md),
+                  _VibeButton(
+                    emoji: f.emoji,
+                    value: f.value,
+                    selected: _selectedMood == f.value,
+                    onTap: () => setState(() {
+                      _selectedMood =
+                          _selectedMood == f.value ? null : f.value;
+                    }),
+                  ),
+                ],
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -822,19 +811,45 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       String checkinId;
 
       if (widget.isCreateMode) {
-        // 1. Create the check-in record
+        // 1. Try to capture device location (gracefully skip on denial)
+        double? lat;
+        double? lng;
+        try {
+          final permission = await Geolocator.checkPermission();
+          LocationPermission granted = permission;
+          if (permission == LocationPermission.denied) {
+            granted = await Geolocator.requestPermission();
+          }
+          if (granted != LocationPermission.denied &&
+              granted != LocationPermission.deniedForever) {
+            final pos = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.medium,
+                timeLimit: Duration(seconds: 10),
+              ),
+            );
+            lat = pos.latitude;
+            lng = pos.longitude;
+          }
+        } catch (_) {
+          // Location unavailable — proceed without coords
+        }
+
+        // 2. Create the check-in record
         final checkin = await repo.createCheckin(
           tripId: widget.tripId,
           kind: widget.kind ?? 'planned',
           capturedAt: _capturedAt,
           itineraryItemId: widget.itemId,
+          lat: lat,
+          lng: lng,
         );
         checkinId = checkin.id;
       } else {
         checkinId = widget.checkinId!;
       }
 
-      // 2. Upload media
+      // 3. Upload media
       for (final xFile in _selectedImages) {
         final bytes = await xFile.readAsBytes();
         final mime = _mimeFromPath(xFile.path);
@@ -847,7 +862,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
         await repo.attachMedia(mediaId, checkinId: checkinId);
       }
 
-      // 3. Update memory layer (if note or mood present)
+      // 4. Update memory layer (if note or mood present)
       final hasMemory = _memoryNoteController.text.isNotEmpty ||
           _selectedMood != null;
       if (hasMemory) {
@@ -860,7 +875,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
         );
       }
 
-      // 4. Update logistics layer (if cost or notes present)
+      // 5. Update logistics layer (if cost or notes present)
       final costText = _logisticsCostController.text.trim();
       final logisticsNotes = _logisticsNotesController.text.trim();
       final hasLogistics = costText.isNotEmpty || logisticsNotes.isNotEmpty;
@@ -875,7 +890,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
         );
       }
 
-      // 5. Update recommendation layer (if title or body present)
+      // 6. Update recommendation layer (if title or body present)
       final recTitle = _recTitleController.text.trim();
       final recBody = _recBodyController.text.trim();
       final hasRec = recTitle.isNotEmpty || recBody.isNotEmpty;

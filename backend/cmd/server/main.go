@@ -25,6 +25,7 @@ import (
 	"github.com/BayuP/memories-app/backend/internal/logger"
 	"github.com/BayuP/memories-app/backend/internal/media"
 	"github.com/BayuP/memories-app/backend/internal/publish"
+	"github.com/BayuP/memories-app/backend/internal/story"
 	"github.com/BayuP/memories-app/backend/internal/trips"
 	"github.com/BayuP/memories-app/backend/internal/users"
 )
@@ -93,6 +94,10 @@ func run() error {
 	mediaSvc := media.NewService(mediaRepo, r2Client, tripRepo)
 	aiSvc := ai.NewService(tripRepo, itnSvc, anthropicClient)
 
+	storyRepo := story.NewRepository(pool)
+	storySvc := story.NewService(storyRepo, tripRepo, checkinRepo, anthropicClient)
+	storyHandler := story.NewHandler(storySvc, log)
+
 	publishRepo := publish.NewRepository(pool)
 	publishSvc := publish.NewService(publishRepo)
 	publishHandler := publish.NewHandler(publishSvc, log)
@@ -117,6 +122,7 @@ func run() error {
 		r.With(authMiddleware).Group(checkinHandler.Routes())
 		r.With(authMiddleware).Group(mediaHandler.Routes())
 		r.With(authMiddleware).Group(aiHandler.Routes())
+		r.With(authMiddleware).Group(storyHandler.Routes())
 		r.With(authMiddleware).Get("/home", func(w http.ResponseWriter, r *http.Request) {
 				callerID, ok := httpx.UserIDFromContext(r.Context())
 				if !ok {

@@ -85,9 +85,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             case AppTab.journeys:
               setState(() => _navIndex = 1);
             case AppTab.memories:
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Coming soon')),
-              );
+              context.push('/memories');
             case AppTab.profile:
               context.push(AppRoutes.profile);
           }

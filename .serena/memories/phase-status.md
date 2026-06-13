@@ -1,5 +1,34 @@
 # Phase Status
 
+## Phase 8 — Design Mockup Gap Closure (9-screen mockup) ✅ DONE (2026-06-13)
+
+Source: `adjust-plan.md` + mockup `007BBAC1-...PNG`. Closed the "memories consumption" half of the design. Backend = only Story; rest frontend.
+
+### Backend — Story feature (`internal/story/`, NEW)
+- Migration `0003_trip_story.up/.down.sql`: `trip_stories` table (id, `trip_id UNIQUE → trips ON DELETE CASCADE`, title, body, status, timestamps, `set_updated_at` trigger).
+- Package files: story.go, model.go (`Story` + `ErrNotFound`/`ErrForbidden`), repository.go (pgxpool, `UpsertStory` INSERT…ON CONFLICT, `FindByTripID`), dto.go, service.go, handler.go.
+- Routes (auth + membership-enforced via `tripRepo.IsMember`), mounted in `cmd/server/main.go`:
+  - `POST /api/v1/trips/{tripID}/story/generate` — reuses existing Anthropic client via `ai.RefineItinerary(ctx, nil, prompt)`. Prompt fed memory notes/moods + recommendations ONLY.
+  - `GET /api/v1/trips/{tripID}/story`
+  - `PATCH /api/v1/trips/{tripID}/story`
+- **Privacy:** `FindLogistics` never called in story service — `checkin_logistics` excluded from AI prompt (honors existing PRIVACY contract).
+- `go build` clean. Pre-existing `go vet` failure in `internal/auth/service_test.go:141` (unrelated).
+
+### Frontend — 6 new screens + cross-cutting
+- **Feelings (Screen 3):** `features/checkin/presentation/feelings.dart` — shared `kFeelings` (5: amazing/love/good/neutral/sad), `moodEmoji()`/`moodLabel()`. Fixed blank `_moodEmoji()` in `trip_timeline_page.dart`. checkin header → "How are you feeling?". Persists to untyped `memory.mood` (no migration).
+- **Memory detail (Screen 4):** `memory_detail_page.dart` read view (hero + feelings + thoughts + 3-col photo grid + fullscreen PageView). Route `/memories/:id`. Timeline tap → read view (edit reachable from inside).
+- **Memories grid (Screen 7):** `features/memories/` — `allMemoriesProvider` (fan-out tripsProvider→listCheckins, media-only, newest-first), `memories_page.dart` month-grouped grid. Nav tab `AptTab.memories` → `/memories`.
+- **People (Screen 8):** `trip_people_page.dart` + `shared/widgets/app_segmented_tabs.dart` (Timeline/Map/People). `addMember`(`{user_id}`, confirmed vs backend)/`removeMember` on trips repo+datasource. `_DoneCard` now shows real photo count + thumbnail.
+- **Map (Screen 5):** `trip_map_page.dart` (flutter_map + OSM + markers). Coord capture in `checkin_page.dart._save()` via geolocator (graceful denial).
+- **Story (Screen 6):** `features/story/` full clean-arch, wired to backend endpoints. Polaroid collage + narrative + generate/regenerate/edit/save. Entry: timeline `more_vert` overflow.
+- **Memory Book (Screen 9):** `book/.../memory_book_page.dart` cover-mock STUB (Preview/Customize = placeholders). Entry: overflow menu.
+- Deps: `flutter_map ^7`, `latlong2 ^0.9`, `geolocator ^13`. No codegen (hand-written notifiers).
+- Native location config: iOS `NSLocationWhenInUseUsageDescription`, Android `ACCESS_FINE/COARSE_LOCATION`.
+- `flutter analyze`: zero new issues.
+
+### Deferred to v2
+Real trip cover photos; `GET /me/checkins` (N+1 in memories grid); Memory Book real export + Customize; Story share (`share_plus`); marker clustering.
+
 ## Phase 7 — UX Polish & Frontend Restructure ✅ DONE (2026-05-31)
 
 ### Frontend restructure

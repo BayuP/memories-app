@@ -16,6 +16,8 @@ abstract class TripsRepository {
 
   Future<MemberEntity> addMember(String tripId, String userId);
 
+  Future<void> removeMember(String tripId, String userId);
+
   Future<List<PublicProfileEntity>> searchUsers(String q);
 
   Future<List<ItineraryItemEntity>> generateItinerary(String tripId);
