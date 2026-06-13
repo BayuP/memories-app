@@ -6,6 +6,8 @@ import 'package:memories_app/core/demo/demo_flag.dart' show demoModeProvider;
 import 'package:memories_app/core/theme/app_theme.dart';
 import 'package:memories_app/features/trips/domain/entities/trip_entity.dart';
 import 'package:memories_app/features/trips/presentation/providers/trips_provider.dart';
+import 'package:memories_app/core/location/geocoding_service.dart';
+import 'package:memories_app/shared/widgets/location_autocomplete_field.dart';
 
 // ---------------------------------------------------------------------------
 // Item categories — drive the list icon and the add-item picker.
@@ -246,9 +248,13 @@ class _ItineraryReviewPageState extends ConsumerState<ItineraryReviewPage> {
                       const Icon(Icons.location_on_outlined,
                           size: 12, color: AppColors.textMuted),
                       const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        detail.trip.destination,
-                        style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
+                      Flexible(
+                        child: Text(
+                          detail.trip.destination,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
+                        ),
                       ),
                       if (detail.trip.startDate != null &&
                           detail.trip.endDate != null) ...[
@@ -707,6 +713,9 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   String? _category;
+  // Coords from autocomplete selection; pre-populated from the item.
+  double? _lat;
+  double? _lng;
   bool _saving = false;
 
   @override
@@ -719,6 +728,8 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
     _category = item.category;
     _startTime = _parseTime(item.startTime);
     _endTime = _parseTime(item.endTime);
+    _lat = item.lat;
+    _lng = item.lng;
   }
 
   @override
@@ -780,6 +791,8 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
         if (_category != null) 'category': _category,
         if (_locationCtrl.text.trim().isNotEmpty)
           'location_name': _locationCtrl.text.trim(),
+        if (_lat != null) 'lat': _lat,
+        if (_lng != null) 'lng': _lng,
         if (_descCtrl.text.trim().isNotEmpty)
           'description': _descCtrl.text.trim(),
       };
@@ -892,10 +905,13 @@ class _EditItemSheetState extends ConsumerState<_EditItemSheet> {
               }).toList(),
             ),
             const SizedBox(height: 12),
-            _SheetField(
-              label: 'Location',
+            _SheetLocationField(
               controller: _locationCtrl,
-              hint: 'Place name',
+              hint: 'Search place',
+              onSelected: (s) => setState(() {
+                _lat = s?.lat;
+                _lng = s?.lng;
+              }),
             ),
             const SizedBox(height: 12),
             _SheetField(
@@ -979,6 +995,9 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   String? _category;
+  // Coords from autocomplete selection.
+  double? _lat;
+  double? _lng;
   bool _saving = false;
   String? _error;
 
@@ -1071,6 +1090,8 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
         if (_category != null) 'category': _category,
         if (_locationCtrl.text.trim().isNotEmpty)
           'location_name': _locationCtrl.text.trim(),
+        if (_lat != null) 'lat': _lat,
+        if (_lng != null) 'lng': _lng,
         if (_descCtrl.text.trim().isNotEmpty)
           'description': _descCtrl.text.trim(),
       };
@@ -1195,7 +1216,14 @@ class _AddItemSheetState extends ConsumerState<_AddItemSheet> {
               }).toList(),
             ),
             const SizedBox(height: 12),
-            _SheetField(label: 'Location', controller: _locationCtrl, hint: 'Place name'),
+            _SheetLocationField(
+              controller: _locationCtrl,
+              hint: 'Search place',
+              onSelected: (s) => setState(() {
+                _lat = s?.lat;
+                _lng = s?.lng;
+              }),
+            ),
             const SizedBox(height: 12),
             _SheetField(
                 label: 'Description', controller: _descCtrl, maxLines: 3),
@@ -1305,6 +1333,50 @@ class _SheetField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             isDense: true,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// Location field with Nominatim autocomplete; matches _SheetField styling but
+// reports the picked PlaceSuggestion (lat/lng) via [onSelected].
+class _SheetLocationField extends StatelessWidget {
+  const _SheetLocationField({
+    required this.controller,
+    required this.onSelected,
+    this.hint,
+  });
+
+  final TextEditingController controller;
+  final void Function(PlaceSuggestion?) onSelected;
+  final String? hint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Location',
+          style: AppTextStyles.labelSmall.copyWith(color: AppColors.textMuted),
+        ),
+        const SizedBox(height: 5),
+        LocationAutocompleteField(
+          controller: controller,
+          hint: hint ?? 'Search location',
+          onSelected: onSelected,
+          inputDecoration: InputDecoration(
+            hintText: hint,
+            isDense: true,
+            prefixIcon: const Icon(
+              Icons.location_on_outlined,
+              size: 16,
+              color: AppColors.textMuted,
+            ),
+            prefixIconConstraints:
+                const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
         ),
       ],
